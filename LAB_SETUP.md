@@ -26,7 +26,8 @@ This guide explains how to set up, verify, and run the Smart Education AI system
 - [O. How to Run the REST API](#o-how-to-run-the-rest-api)
 - [P. How to Verify Video & Audio Attention](#p-how-to-verify-video--audio-attention)
 - [Q. How to Configure Ollama Generative AI](#q-how-to-configure-ollama-generative-ai)
-- [R. Files That Must NEVER Be Uploaded to GitHub](#r-files-that-must-never-be-uploaded-to-github)
+- [R. How to Generate Experiment Graphs & Academic Reports](#r-how-to-generate-experiment-graphs--academic-reports)
+- [S. Files That Must NEVER Be Uploaded to GitHub](#s-files-that-must-never-be-uploaded-to-github)
 
 ---
 
@@ -358,7 +359,64 @@ Ollama provides conversational explanations for learning gaps and recommendation
 
 ---
 
-## R. Files That Must NEVER Be Uploaded to GitHub
+## R. How to Generate Experiment Graphs & Academic Reports
+
+The system provides an automated visualization and reporting engine (`src/experiment_visualizer.py`) that generates 16 standardized, publication-ready figures (both high-resolution 300 DPI PNG and vector SVG) and an academic Markdown report across 14 sections directly from actual empirical experiment logs (`reports/experiment_results.csv`).
+
+### Generating Visualizations via CLI
+To generate or refresh all 16 figures and the comprehensive report at any time:
+```powershell
+python scripts/generate_experiment_graphs.py
+```
+Or via the experiment runner utility:
+```powershell
+python scripts/run_experiments.py --visualize-only
+```
+
+*Note:* When running `python scripts/run_experiments.py`, the visualization suite is executed automatically upon experiment completion.
+
+### Generated Figures Directory (`reports/figures/`)
+The engine produces the following 16 comparison plots in both `.png` (300 DPI) and `.svg`:
+1. `model_accuracy_comparison`: Test accuracy comparison across all 5 models.
+2. `model_precision_comparison`: Precision metric comparison across all 5 models.
+3. `model_recall_comparison`: Recall metric comparison across all 5 models.
+4. `model_f1_comparison`: F1-Score comparison across all 5 models.
+5. `model_roc_auc_comparison`: ROC-AUC curve comparisons across all models.
+6. `validation_10fold_comparison`: Fold-level performance with mean ± standard deviation error bars.
+7. `smote_comparison`: Baseline vs SMOTE synthetic oversampling comparison.
+8. `adasyn_comparison`: Baseline vs ADASYN adaptive oversampling comparison.
+9. `gan_comparison`: Baseline vs Tabular WGAN-GP augmentation comparison.
+10. `augmentation_comparison`: Comprehensive comparison across all four augmentation conditions.
+11. `fit_correction_comparison`: Pre-correction vs post-regularization overfitting mitigation.
+12. `training_time_comparison`: Total wall-clock training duration (seconds).
+13. `inference_latency_comparison`: Per-sample latency with 100ms real-time threshold line.
+14. `ram_comparison`: Peak system RAM consumption (MB).
+15. `gpu_vram_comparison`: Peak GPU VRAM memory utilization (MB).
+16. `throughput_comparison`: Evaluated samples processed per second.
+
+### Academic Report (`reports/comprehensive_experiment_report.md`)
+Generates a structured 14-section comprehensive synthesis report:
+1. Dataset Specification (EdNet-KT3 & Contents Metadata)
+2. 80:20 User Partitioning Strategy
+3. Data Leakage Audit & Verification Suite
+4. Validation Methodology (Holdout vs 10-Fold GroupKFold)
+5. Model Architecture Benchmark (Models 1–5)
+6. 10-Fold Cross-Validation Uncertainty Analysis
+7. SMOTE Oversampling Efficacy
+8. ADASYN Adaptive Oversampling Efficacy
+9. Tabular WGAN-GP Generative Augmentation Efficacy
+10. Multi-Augmentation Comprehensive Comparison
+11. Diagnostic Fit Assessment & Regularization Correction
+12. Computational Efficiency & Hardware Profiling
+13. Final Frozen Holdout Evaluation
+14. Architectural Insights & Deployment Conclusions
+
+### Viewing Visualizations in Streamlit GUI
+The figures are directly integrated into the Streamlit frontend (`gui/page_evaluation.py`) under Section 7 (*"Generated Visualizations & Experiment Plots"*), tabbed into Model Metrics, 10-Fold CV, Augmentation, Fit Correction, and Hardware & Efficiency. If any plot has not been generated yet, the UI displays `NOT RUN` instead of placeholder data.
+
+---
+
+## S. Files That Must NEVER Be Uploaded to GitHub
 
 The `.gitignore` file enforces that the following large or sensitive assets are NEVER committed:
 1. **Raw EdNet Datasets:** `EdNet-KT3/`, `EdNet-Contents/`, `data/raw/`

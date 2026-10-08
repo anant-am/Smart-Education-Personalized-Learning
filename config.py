@@ -91,6 +91,7 @@ CHECKPOINTS_DIR = Path(os.environ.get("CHECKPOINT_ROOT", os.environ.get("SMART_E
 ATTENTION_CHECKPOINTS_DIR = CHECKPOINTS_DIR / "attention"
 LOGS_DIR = Path(os.environ.get("SMART_EDU_LOGS_DIR", str(OUTPUT_ROOT / "logs" if OUTPUT_ROOT != PROJECT_ROOT else PROJECT_ROOT / "logs")))
 REPORTS_DIR = Path(os.environ.get("SMART_EDU_REPORTS_DIR", str(OUTPUT_ROOT / "reports" if OUTPUT_ROOT != PROJECT_ROOT else PROJECT_ROOT / "reports")))
+FIGURES_DIR = REPORTS_DIR / "figures"
 PLOTS_DIR = Path(os.environ.get("SMART_EDU_PLOTS_DIR", str(OUTPUT_ROOT / "plots" if OUTPUT_ROOT != PROJECT_ROOT else PROJECT_ROOT / "plots")))
 
 EXPERIMENT_MANIFEST_PATH = REPORTS_DIR / "experiment_manifest.json"
@@ -129,7 +130,7 @@ def ensure_dirs():
     """Create project output directories if they don't exist."""
     for d in [DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR,
               MODELS_DIR, CHECKPOINTS_DIR, ATTENTION_CHECKPOINTS_DIR,
-              LOGS_DIR, REPORTS_DIR, PLOTS_DIR]:
+              LOGS_DIR, REPORTS_DIR, FIGURES_DIR, PLOTS_DIR]:
         d.mkdir(parents=True, exist_ok=True)
 
 

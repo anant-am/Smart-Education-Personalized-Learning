@@ -385,3 +385,59 @@ def render(engine: Optional[Any] = None) -> None:
                 st.markdown(f"- **Enforced User Overlap**: {cv_settings.get('enforced_overlap', 0)} students (strictly 0)")
     else:
         st.info("No training configuration found in experiment manifest.")
+
+    st.markdown("---")
+
+    # 10. Automated Experiment Comparison Figures
+    st.subheader("7. Automated Experiment Comparison Figures")
+    st.caption("Standardized comparison figures generated from empirical experiment results.")
+
+    from config import FIGURES_DIR
+
+    def _render_fig(fig_name: str, caption: str):
+        fig_path = FIGURES_DIR / fig_name
+        if fig_path.exists():
+            st.image(str(fig_path), caption=caption, use_container_width=True)
+        else:
+            st.info(f"Figure '{fig_name}': Status — NOT RUN")
+
+    fig_tab1, fig_tab2, fig_tab3, fig_tab4, fig_tab5 = st.tabs([
+        "Model Metrics", "10-Fold CV", "Augmentation", "Fit Correction", "Hardware & Efficiency"
+    ])
+
+    with fig_tab1:
+        st.markdown("##### Multi-Model Classification Benchmarks (Baseline)")
+        _render_fig("model_accuracy_comparison.png", "Figure 1: Model Accuracy Comparison")
+        _render_fig("model_roc_auc_comparison.png", "Figure 5: Model ROC-AUC Comparison")
+        _render_fig("model_precision_comparison.png", "Figure 2: Model Precision Comparison")
+        _render_fig("model_recall_comparison.png", "Figure 3: Model Recall Comparison")
+        _render_fig("model_f1_comparison.png", "Figure 4: Model F1 Comparison")
+
+    with fig_tab2:
+        st.markdown("##### Validation Strategy Benchmark (Holdout vs. 10-Fold GroupKFold)")
+        _render_fig("validation_10fold_comparison.png", "Figure 6: Validation 10-Fold Comparison with Error Bars")
+
+    with fig_tab3:
+        st.markdown("##### Resampling & Synthetic Augmentation Ablation Benchmarks")
+        _render_fig("augmentation_comparison.png", "Figure 10: All 4 Augmentation Methods Comparison")
+        col_aug1, col_aug2 = st.columns(2)
+        with col_aug1:
+            _render_fig("smote_comparison.png", "Figure 7: Baseline vs SMOTE")
+            _render_fig("adasyn_comparison.png", "Figure 8: Baseline vs ADASYN")
+        with col_aug2:
+            _render_fig("gan_comparison.png", "Figure 9: Baseline vs Tabular WGAN-GP")
+
+    with fig_tab4:
+        st.markdown("##### Model Fit Diagnosis & Regularization Retraining")
+        _render_fig("fit_correction_comparison.png", "Figure 11: Generalization Fit Correction (Before vs After Regularization)")
+
+    with fig_tab5:
+        st.markdown("##### Hardware Footprint & Operational Latency Profiles")
+        col_eff1, col_eff2 = st.columns(2)
+        with col_eff1:
+            _render_fig("training_time_comparison.png", "Figure 12: Wall-Clock Training Time")
+            _render_fig("ram_comparison.png", "Figure 14: Peak Host RAM Usage")
+        with col_eff2:
+            _render_fig("inference_latency_comparison.png", "Figure 13: Inference Latency vs. 100ms Threshold")
+            _render_fig("gpu_vram_comparison.png", "Figure 15: Peak NVIDIA GPU VRAM")
+        _render_fig("throughput_comparison.png", "Figure 16: Inference Event Throughput")

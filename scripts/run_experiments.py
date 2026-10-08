@@ -839,6 +839,16 @@ class ExperimentMatrixRunner:
             f.write('\n'.join(lines))
         print(f"  [EXPORT COMPLETE] Generated {self.summary_md_path.name} with Tables A through J.")
 
+        # Automatic generation of all 16 figures and comprehensive report
+        try:
+            from src.experiment_visualizer import ExperimentVisualizer
+            viz = ExperimentVisualizer(results_csv_path=self.results_csv_path)
+            if viz.is_data_available():
+                viz.generate_all_figures()
+                viz.generate_comprehensive_report()
+        except Exception as e:
+            print(f"  [!] Warning: Automatic figure generation encountered an issue: {e}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run 40-Configuration Master Experiment Matrix")
@@ -857,7 +867,18 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE, help="Batch size")
     parser.add_argument("--max-students", type=int, default=None, help="Max students to subset in dev mode")
     parser.add_argument("--force", action="store_true", help="Force rerun of already completed configurations")
+    parser.add_argument("--visualize-only", action="store_true", help="Generate figures and report from existing results without retraining")
     args = parser.parse_args()
+
+    if args.visualize_only:
+        from src.experiment_visualizer import ExperimentVisualizer
+        viz = ExperimentVisualizer()
+        if viz.is_data_available():
+            viz.generate_all_figures()
+            viz.generate_comprehensive_report()
+        else:
+            print("[!] Notice: No experiment results found to visualize. Status: NOT RUN")
+        sys.exit(0)
 
     runner = ExperimentMatrixRunner(mode=args.mode, force=args.force, max_students=args.max_students)
 
