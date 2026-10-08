@@ -12,9 +12,11 @@ Provides:
 """
 
 import os
+import sys
 import time
 import copy
 import json
+from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
@@ -26,6 +28,9 @@ from sklearn.metrics import (
 )
 import matplotlib.pyplot as plt
 from typing import Dict, Any, Optional, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import PLOTS_DIR, CHECKPOINTS_DIR
 
 RANDOM_SEED = 42
 torch.manual_seed(RANDOM_SEED)
@@ -43,8 +48,8 @@ class ModelTrainer:
         self.device = device
         self.config = config or {}
 
-        self.plots_dir = r"A:\edge download\Smart_Education_Project\plots"
-        self.checkpoints_dir = r"A:\edge download\Smart_Education_Project\models\checkpoints"
+        self.plots_dir = str(self.config.get('plots_dir', PLOTS_DIR))
+        self.checkpoints_dir = str(self.config.get('checkpoints_dir', CHECKPOINTS_DIR))
         os.makedirs(self.plots_dir, exist_ok=True)
         os.makedirs(self.checkpoints_dir, exist_ok=True)
 

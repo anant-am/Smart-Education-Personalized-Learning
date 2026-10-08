@@ -2,8 +2,8 @@
 Step 2 — Rigorous Academic Data Preprocessing
 ===============================================
 Reconstructs meaningful learning events from raw KT3 interactions for both:
-1. Development Cohort: A:\\edge download\\EdNet-KT3\\KT-3 (1000) (1,000 users)
-2. Final Unseen Test Cohort: A:\\edge download\\EdNet-KT3\\KT-3 (250) TEST (250 users)
+1. Development Cohort: EdNet-KT3 Development cohort
+2. Final Unseen Test Cohort: EdNet-KT3 Frozen Test cohort
 
 CRITICAL ACADEMIC COMPLIANCE:
 - All vocabularies (questions, tags, platforms, sources) and continuous normalizers

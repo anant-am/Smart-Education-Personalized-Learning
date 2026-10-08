@@ -759,5 +759,6 @@ def create_presentation(output_path: str):
     print(f"Presentation successfully saved to: {output_path}")
 
 if __name__ == "__main__":
-    output_ppt = r"A:\edge download\Smart_Education_Project\reports\Smart_Education_Defense_Presentation.pptx"
+    from config import REPORTS_DIR
+    output_ppt = str(REPORTS_DIR / "Smart_Education_Defense_Presentation.pptx")
     create_presentation(output_ppt)

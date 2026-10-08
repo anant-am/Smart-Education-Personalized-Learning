@@ -17,7 +17,7 @@ from typing import Dict, Any, Optional, List
 import numpy as np
 
 import sys
-PROJECT_ROOT = Path(r"A:\edge download\Smart_Education_Project")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from attention.attention_inference import AttentionInferenceEngine

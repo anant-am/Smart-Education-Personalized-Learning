@@ -112,8 +112,12 @@ class MultiModelInferenceEngine:
         m1_path = CHECKPOINTS_DIR / "model1_lstm_corrected_best.pth"
         if not m1_path.exists():
             m1_path = CHECKPOINTS_DIR / "model1_lstm_best.pth"
-        self.m1 = LSTMAttentionKT(num_questions=self.num_questions, num_parts=self.num_parts, num_tags=self.num_tags).to(self.device)
-        self.m1.load_state_dict(torch.load(m1_path, map_location=self.device, weights_only=False))
+        m1_sd = torch.load(m1_path, map_location=self.device, weights_only=False)
+        m1_nq = m1_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m1_sd else self.num_questions
+        m1_np = m1_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m1_sd else self.num_parts
+        m1_nt = m1_sd['tag_emb.weight'].shape[0] - 2 if 'tag_emb.weight' in m1_sd else self.num_tags
+        self.m1 = LSTMAttentionKT(num_questions=m1_nq, num_parts=m1_np, num_tags=m1_nt).to(self.device)
+        self.m1.load_state_dict(m1_sd)
         self.m1.eval()
         print(f"  [OK] Model 1 (LSTM + Attention) Loaded       : {m1_path.name}")
 
@@ -121,8 +125,12 @@ class MultiModelInferenceEngine:
         m2_path = CHECKPOINTS_DIR / "model2_transformer_corrected_best.pth"
         if not m2_path.exists():
             m2_path = CHECKPOINTS_DIR / "model2_transformer_best.pth"
-        self.m2 = TransformerKT(num_questions=self.num_questions, num_parts=self.num_parts, num_tags=self.num_tags).to(self.device)
-        self.m2.load_state_dict(torch.load(m2_path, map_location=self.device, weights_only=False))
+        m2_sd = torch.load(m2_path, map_location=self.device, weights_only=False)
+        m2_nq = m2_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m2_sd else self.num_questions
+        m2_np = m2_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m2_sd else self.num_parts
+        m2_nt = m2_sd['tag_emb.weight'].shape[0] - 2 if 'tag_emb.weight' in m2_sd else self.num_tags
+        self.m2 = TransformerKT(num_questions=m2_nq, num_parts=m2_np, num_tags=m2_nt).to(self.device)
+        self.m2.load_state_dict(m2_sd)
         self.m2.eval()
         print(f"  [OK] Model 2 (Transformer + KT) Loaded       : {m2_path.name}")
 
@@ -130,8 +138,12 @@ class MultiModelInferenceEngine:
         m3_path = CHECKPOINTS_DIR / "model3_bert_ncf_corrected_best.pth"
         if not m3_path.exists():
             m3_path = CHECKPOINTS_DIR / "model3_bert_ncf_best.pth"
-        self.m3 = BERTNCF(num_questions=self.num_questions, num_parts=self.num_parts, num_tags=self.num_tags).to(self.device)
-        self.m3.load_state_dict(torch.load(m3_path, map_location=self.device, weights_only=False))
+        m3_sd = torch.load(m3_path, map_location=self.device, weights_only=False)
+        m3_nq = m3_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m3_sd else self.num_questions
+        m3_np = m3_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m3_sd else self.num_parts
+        m3_nt = m3_sd['tag_emb.weight'].shape[0] - 2 if 'tag_emb.weight' in m3_sd else self.num_tags
+        self.m3 = BERTNCF(num_questions=m3_nq, num_parts=m3_np, num_tags=m3_nt).to(self.device)
+        self.m3.load_state_dict(m3_sd)
         self.m3.eval()
         print(f"  [OK] Model 3 (BERT-style + NCF) Loaded       : {m3_path.name}")
 
@@ -139,8 +151,10 @@ class MultiModelInferenceEngine:
         m4_path = CHECKPOINTS_DIR / "model4_autoencoder_corrected_best.pth"
         if not m4_path.exists():
             m4_path = CHECKPOINTS_DIR / "model4_autoencoder_best.pth"
-        self.m4 = AutoencoderRecommender(input_dim=500, latent_dim=32, hidden_dim=64, num_resources=500).to(self.device)
-        self.m4.load_state_dict(torch.load(m4_path, map_location=self.device, weights_only=False))
+        m4_sd = torch.load(m4_path, map_location=self.device, weights_only=False)
+        m4_dim = m4_sd['encoder.0.weight'].shape[1] if 'encoder.0.weight' in m4_sd else 500
+        self.m4 = AutoencoderRecommender(input_dim=m4_dim, latent_dim=32, hidden_dim=64, num_resources=m4_dim).to(self.device)
+        self.m4.load_state_dict(m4_sd)
         self.m4.eval()
         print(f"  [OK] Model 4 (Autoencoder Recommender) Loaded: {m4_path.name}")
 
@@ -148,8 +162,12 @@ class MultiModelInferenceEngine:
         m5_path = CHECKPOINTS_DIR / "model5_cnn_lstm_corrected_best.pth"
         if not m5_path.exists():
             m5_path = CHECKPOINTS_DIR / "model5_cnn_lstm_best.pth"
-        self.m5 = CNNLSTM(num_questions=self.num_questions, num_parts=self.num_parts, num_tags=self.num_tags).to(self.device)
-        self.m5.load_state_dict(torch.load(m5_path, map_location=self.device, weights_only=False))
+        m5_sd = torch.load(m5_path, map_location=self.device, weights_only=False)
+        m5_nq = m5_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m5_sd else self.num_questions
+        m5_np = m5_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m5_sd else self.num_parts
+        m5_nt = m5_sd['tag_emb.weight'].shape[0] - 2 if 'tag_emb.weight' in m5_sd else self.num_tags
+        self.m5 = CNNLSTM(num_questions=m5_nq, num_parts=m5_np, num_tags=m5_nt).to(self.device)
+        self.m5.load_state_dict(m5_sd)
         self.m5.eval()
         print(f"  [OK] Model 5 (CNN + LSTM) Loaded             : {m5_path.name}")
 
@@ -249,7 +267,7 @@ class MultiModelInferenceEngine:
 
         if student_rows.empty:
             # Try searching in other splits
-            for alt_split in ["val", "train"]:
+            for alt_split in ["val", "train", "test_unseen_250", "train_dev"]:
                 alt_path = PROCESSED_DATA_DIR / f"{alt_split}.csv"
                 if alt_path.exists():
                     alt_df = pd.read_csv(alt_path)

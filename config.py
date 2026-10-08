@@ -9,16 +9,64 @@ import os
 from pathlib import Path
 
 # ============================================================
-# Project Paths
+# Project Paths & Environment Overrides
 # ============================================================
-PROJECT_ROOT = Path(r"A:\edge download\Smart_Education_Project")
+PROJECT_ROOT = Path(os.environ.get("SMART_EDU_PROJECT_ROOT", os.environ.get("PROJECT_ROOT", str(Path(__file__).resolve().parent))))
 
-# Original datasets (READ-ONLY — never modify these)
-EDNET_CONTENTS_DIR = Path(r"A:\edge download\EdNet-Contents\contents")
-EDNET_KT3_DEV_DIR = Path(r"A:\edge download\EdNet-KT3\KT-3 (1000)")
-EDNET_KT3_TEST_DIR = Path(r"A:\edge download\EdNet-KT3\KT-3 (250) TEST")
-EDNET_KT3_FULL_DIR = Path(r"A:\edge download\EdNet-KT3\KT3")
-EDNET_KT3_DIR = EDNET_KT3_DEV_DIR  # Default development cohort
+# Optional .env loader (no external dependency needed)
+_env_file = PROJECT_ROOT / ".env"
+if _env_file.exists():
+    try:
+        with open(_env_file, "r", encoding="utf-8") as _ef:
+            for _line in _ef:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    _k, _v = _k.strip(), _v.strip().strip("'\"")
+                    if _k and _k not in os.environ and _v:
+                        os.environ[_k] = _v
+    except Exception:
+        pass
+
+# Execution Modes: 'smoke', 'dev', 'full'
+EXECUTION_MODE = os.environ.get("SMART_EDU_MODE", os.environ.get("EXECUTION_MODE", "dev")).lower().strip()
+
+# Original datasets (READ-ONLY — configurable via environment variables)
+_env_contents = os.environ.get("EDNET_CONTENTS_ROOT", os.environ.get("EDNET_CONTENTS_DIR"))
+if _env_contents:
+    EDNET_CONTENTS_DIR = Path(_env_contents)
+else:
+    if (PROJECT_ROOT / "data" / "contents").exists():
+        EDNET_CONTENTS_DIR = PROJECT_ROOT / "data" / "contents"
+    elif (PROJECT_ROOT.parent / "EdNet-Contents" / "contents").exists():
+        EDNET_CONTENTS_DIR = PROJECT_ROOT.parent / "EdNet-Contents" / "contents"
+    elif (PROJECT_ROOT / "EdNet-Contents" / "contents").exists():
+        EDNET_CONTENTS_DIR = PROJECT_ROOT / "EdNet-Contents" / "contents"
+    elif Path(r"A:\edge download\EdNet-Contents\contents").exists():
+        EDNET_CONTENTS_DIR = Path(r"A:\edge download\EdNet-Contents\contents")
+    else:
+        EDNET_CONTENTS_DIR = PROJECT_ROOT / "data" / "contents"
+
+_env_full = os.environ.get("EDNET_KT3_ROOT", os.environ.get("EDNET_KT3_FULL_DIR", os.environ.get("EDNET_KT3_DIR")))
+if _env_full:
+    EDNET_KT3_FULL_DIR = Path(_env_full)
+else:
+    if (PROJECT_ROOT / "data" / "KT3").exists():
+        EDNET_KT3_FULL_DIR = PROJECT_ROOT / "data" / "KT3"
+    elif (PROJECT_ROOT.parent / "EdNet-KT3" / "KT3").exists():
+        EDNET_KT3_FULL_DIR = PROJECT_ROOT.parent / "EdNet-KT3" / "KT3"
+    elif (PROJECT_ROOT / "EdNet-KT3" / "KT3").exists():
+        EDNET_KT3_FULL_DIR = PROJECT_ROOT / "EdNet-KT3" / "KT3"
+    elif Path(r"A:\edge download\EdNet-KT3\KT3").exists():
+        EDNET_KT3_FULL_DIR = Path(r"A:\edge download\EdNet-KT3\KT3")
+    else:
+        EDNET_KT3_FULL_DIR = PROJECT_ROOT / "data" / "KT3"
+
+_default_dev = Path(r"A:\edge download\EdNet-KT3\KT-3 (1000)")
+_default_test = Path(r"A:\edge download\EdNet-KT3\KT-3 (250) TEST")
+EDNET_KT3_DEV_DIR = Path(os.environ.get("EDNET_KT3_DEV_DIR", str(_default_dev if _default_dev.exists() else EDNET_KT3_FULL_DIR)))
+EDNET_KT3_TEST_DIR = Path(os.environ.get("EDNET_KT3_TEST_DIR", str(_default_test if _default_test.exists() else EDNET_KT3_FULL_DIR)))
+EDNET_KT3_DIR = EDNET_KT3_FULL_DIR if EXECUTION_MODE == "full" else EDNET_KT3_DEV_DIR
 
 # Contents files
 QUESTIONS_CSV = EDNET_CONTENTS_DIR / "questions.csv"
@@ -27,22 +75,23 @@ COUPONS_CSV = EDNET_CONTENTS_DIR / "coupons.csv"
 PAYMENTS_CSV = EDNET_CONTENTS_DIR / "payments.csv"
 
 # Project output directories (all processed data goes here)
-DATA_DIR = PROJECT_ROOT / "data"
-RAW_DATA_DIR = DATA_DIR / "raw"
-PROCESSED_DATA_DIR = DATA_DIR / "processed"
+OUTPUT_ROOT = Path(os.environ.get("OUTPUT_ROOT", os.environ.get("SMART_EDU_OUTPUT_DIR", str(PROJECT_ROOT))))
+DATA_DIR = Path(os.environ.get("SMART_EDU_DATA_DIR", str(PROJECT_ROOT / "data")))
+RAW_DATA_DIR = Path(os.environ.get("SMART_EDU_RAW_DATA_DIR", str(DATA_DIR / "raw")))
+PROCESSED_DATA_DIR = Path(os.environ.get("PROCESSED_DATA_ROOT", os.environ.get("SMART_EDU_PROCESSED_DATA_DIR", str(DATA_DIR / "processed"))))
 
 # Video + Audio Attention Datasets
-VIDEO_AUDIO_DATA_DIR = PROJECT_ROOT / "video audio dataset"
+VIDEO_AUDIO_DATA_DIR = Path(os.environ.get("VIDEO_AUDIO_DATA_DIR", str(PROJECT_ROOT / "video audio dataset")))
 VIDEO_ATTENTION_CSV = VIDEO_AUDIO_DATA_DIR / "video_attention_dataset.csv"
 AUDIO_ATTENTION_CSV = VIDEO_AUDIO_DATA_DIR / "audio_attention_dataset.csv"
 
 # Model outputs
-MODELS_DIR = PROJECT_ROOT / "models"
-CHECKPOINTS_DIR = MODELS_DIR / "checkpoints"
+MODELS_DIR = Path(os.environ.get("SMART_EDU_MODELS_DIR", str(OUTPUT_ROOT / "models" if OUTPUT_ROOT != PROJECT_ROOT else PROJECT_ROOT / "models")))
+CHECKPOINTS_DIR = Path(os.environ.get("CHECKPOINT_ROOT", os.environ.get("SMART_EDU_CHECKPOINTS_DIR", os.environ.get("CHECKPOINTS_DIR", str(MODELS_DIR / "checkpoints")))))
 ATTENTION_CHECKPOINTS_DIR = CHECKPOINTS_DIR / "attention"
-LOGS_DIR = PROJECT_ROOT / "logs"
-REPORTS_DIR = PROJECT_ROOT / "reports"
-PLOTS_DIR = PROJECT_ROOT / "plots"
+LOGS_DIR = Path(os.environ.get("SMART_EDU_LOGS_DIR", str(OUTPUT_ROOT / "logs" if OUTPUT_ROOT != PROJECT_ROOT else PROJECT_ROOT / "logs")))
+REPORTS_DIR = Path(os.environ.get("SMART_EDU_REPORTS_DIR", str(OUTPUT_ROOT / "reports" if OUTPUT_ROOT != PROJECT_ROOT else PROJECT_ROOT / "reports")))
+PLOTS_DIR = Path(os.environ.get("SMART_EDU_PLOTS_DIR", str(OUTPUT_ROOT / "plots" if OUTPUT_ROOT != PROJECT_ROOT else PROJECT_ROOT / "plots")))
 
 EXPERIMENT_MANIFEST_PATH = REPORTS_DIR / "experiment_manifest.json"
 COMPLIANCE_CHECKLIST_PATH = REPORTS_DIR / "final_compliance_checklist.md"

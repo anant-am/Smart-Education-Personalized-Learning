@@ -6,8 +6,8 @@
 ## 1. Quantitative Class Rebalancing Summary
 | Split / Status | Class 0 (Incorrect) | Class 1 (Correct) | Total Samples | Imbalance Ratio (0:1) |
 |---|---|---|---|---|
-| **Before SMOTE (train.csv)** | 141,257 (33.2%) | 284,418 (66.8%) | 425,675 | 0.497 : 1 |
-| **After SMOTE (train_smote_flat.csv)** | 284,418 (50.0%) | 284,418 (50.0%) | 568,836 | 1.00 : 1 |
+| **Before SMOTE (train.csv)** | 124,998 (31.5%) | 271,292 (68.5%) | 396,290 | 0.461 : 1 |
+| **After SMOTE (train_smote_flat.csv)** | 271,292 (50.0%) | 271,292 (50.0%) | 542,584 | 1.00 : 1 |
 
 ## 2. Academic Defense & Methodological Guarantees
 - **Zero Distribution Leakage:** SMOTE synthetic generation was fitted and executed exclusively on the training partition. The validation fold and the 250-student final test cohort remain in their natural un-augmented distribution, preventing synthetic data leakage into evaluation benchmarks.

@@ -6,27 +6,27 @@
 ## 1. Quantitative Class Rebalancing Summary
 | Split / Status | Class 0 (Incorrect) | Class 1 (Correct) | Total Samples | Imbalance Ratio (0:1) |
 |---|---|---|---|---|
-| **Before GAN (train.csv)** | 141,257 (33.2%) | 284,418 (66.8%) | 425,675 | 0.497 : 1 |
-| **After GAN (train_gan_flat.csv)** | 284,418 (50.0%) | 284,418 (50.0%) | 568,836 | 1.00 : 1 |
+| **Before GAN (train.csv)** | 124,998 (31.5%) | 271,292 (68.5%) | 396,290 | 0.461 : 1 |
+| **After GAN (train_gan_flat.csv)** | 271,292 (50.0%) | 271,292 (50.0%) | 542,584 | 1.00 : 1 |
 
-*Synthetic Minority Samples Generated via WGAN-GP:* **143,161**
+*Synthetic Minority Samples Generated via WGAN-GP:* **146,294**
 
 ## 2. Generative Quality & Statistical Fidelity Assessment
-- **Mean Wasserstein Distance across Features:** `55.6498`
-- **Correlation Matrix Frobenius Distance:** `0.6426`
+- **Mean Wasserstein Distance across Features:** `51.2092`
+- **Correlation Matrix Frobenius Distance:** `0.7442`
 
 | Feature Name | Wasserstein-1 Distance | KS Statistic | KS p-value | Fidelity Interpretation |
 |---|---|---|---|---|
-| `previous_accuracy` | 0.0136 | 0.0664 | 5.2188e-273 | High Fidelity |
-| `recent_accuracy_5` | 0.0698 | 0.2129 | 0.0000e+00 | High Fidelity |
-| `attempt_count` | 318.5827 | 0.1850 | 0.0000e+00 | High Fidelity |
-| `response_time_norm` | 0.1714 | 0.1377 | 0.0000e+00 | High Fidelity |
-| `time_since_prev_norm` | 0.0545 | 0.3753 | 0.0000e+00 | Moderate Fidelity |
-| `source_encoded` | 0.2317 | 0.4905 | 0.0000e+00 | Moderate Fidelity |
-| `platform_encoded` | 0.0092 | 0.2023 | 0.0000e+00 | High Fidelity |
-| `part` | 0.2999 | 0.3105 | 0.0000e+00 | Moderate Fidelity |
-| `num_responses` | 0.9029 | 0.3042 | 0.0000e+00 | Moderate Fidelity |
-| `question_idx` | 236.1625 | 0.0640 | 1.0444e-253 | High Fidelity |
+| `previous_accuracy` | 0.0373 | 0.1851 | 0.0000e+00 | High Fidelity |
+| `recent_accuracy_5` | 0.0506 | 0.1692 | 0.0000e+00 | High Fidelity |
+| `attempt_count` | 308.7821 | 0.1351 | 0.0000e+00 | High Fidelity |
+| `response_time_norm` | 0.0832 | 0.1149 | 0.0000e+00 | High Fidelity |
+| `time_since_prev_norm` | 0.0341 | 0.3154 | 0.0000e+00 | Moderate Fidelity |
+| `source_encoded` | 0.2330 | 0.4073 | 0.0000e+00 | Moderate Fidelity |
+| `platform_encoded` | 0.0108 | 0.3315 | 0.0000e+00 | Moderate Fidelity |
+| `part` | 0.2956 | 0.2413 | 0.0000e+00 | High Fidelity |
+| `num_responses` | 1.5375 | 0.4259 | 0.0000e+00 | Moderate Fidelity |
+| `question_idx` | 201.0274 | 0.0545 | 2.2857e-174 | High Fidelity |
 
 ## 3. Academic Defense & Methodological Guarantees
 - **Zero Distribution Leakage:** WGAN-GP training and synthesis were strictly isolated to `train.csv`. Neither validation nor unseen test distributions were exposed to the generator or critic.

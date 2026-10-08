@@ -21,11 +21,8 @@ from collections import Counter
 
 import pandas as pd
 
-# ============================================================
-# Configuration — Dataset Paths (centralized)
-# ============================================================
-EDNET_CONTENTS_DIR = r"A:\edge download\EdNet-Contents\contents"
-EDNET_KT3_DIR = r"A:\edge download\EdNet-KT3\KT-3 (1000)"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import EDNET_CONTENTS_DIR, EDNET_KT3_DIR
 
 # ============================================================
 # Helper Functions

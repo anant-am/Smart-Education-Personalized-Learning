@@ -21,6 +21,7 @@ logs/
 # Environment and secrets
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 *.token
@@ -31,14 +32,21 @@ secrets.json
 .DS_Store
 Thumbs.db
 desktop.ini
+scratch/
 
-# Raw and processed datasets (documented in README, not committed to git)
+# Raw and processed datasets (documented in LAB_SETUP.md, not committed to git)
 data/**/*.csv
 data/*.csv
 data/**/*.pkl
 data/*.pkl
+data/processed/*.csv
+data/processed/*.pkl
+data/raw/
+EdNet-KT3/
+EdNet-Contents/
 video audio dataset/**/*.csv
 video audio dataset/*.csv
+all_prompts*
 
 # Raw video and audio files
 *.mp4

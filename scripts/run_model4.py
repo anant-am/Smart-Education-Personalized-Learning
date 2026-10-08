@@ -52,8 +52,10 @@ def build_interaction_matrices(max_dev_users: int = None, max_test_users: int = 
     Builds interaction matrices for Autoencoder.
     Candidate resource vocabulary is fitted EXCLUSIVELY on the Development cohort.
     """
-    dev_q_df = pd.read_csv(PROCESSED_DATA_DIR / "train_dev.csv")
-    test_q_df = pd.read_csv(PROCESSED_DATA_DIR / "test_unseen_250.csv")
+    dev_path = PROCESSED_DATA_DIR / "train_dev.csv" if (PROCESSED_DATA_DIR / "train_dev.csv").exists() else PROCESSED_DATA_DIR / "train.csv"
+    test_path = PROCESSED_DATA_DIR / "test.csv" if (PROCESSED_DATA_DIR / "test.csv").exists() else PROCESSED_DATA_DIR / "test_unseen_250.csv"
+    dev_q_df = pd.read_csv(dev_path)
+    test_q_df = pd.read_csv(test_path)
 
     l_path = PROCESSED_DATA_DIR / "lecture_events.csv"
     e_path = PROCESSED_DATA_DIR / "explanation_events.csv"

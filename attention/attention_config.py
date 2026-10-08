@@ -9,9 +9,9 @@ from pathlib import Path
 from dataclasses import dataclass
 import sys
 
-PROJECT_ROOT = Path(r"A:\edge download\Smart_Education_Project")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-from config import RANDOM_SEED, CHECKPOINTS_DIR, REPORTS_DIR, PLOTS_DIR
+from config import RANDOM_SEED, CHECKPOINTS_DIR, REPORTS_DIR, PLOTS_DIR, VIDEO_AUDIO_DATA_DIR
 
 # Feature definitions according to authoritative dataset headers
 VIDEO_FEATURE_NAMES = [
@@ -50,8 +50,8 @@ ATTENTION_LABEL_MAP = {
 ATTENTION_CLASS_NAMES = ["Inattentive", "Partially Attentive", "Attentive"]
 
 # Paths
-VIDEO_ATTENTION_CSV = PROJECT_ROOT / "video audio dataset" / "video_attention_dataset.csv"
-AUDIO_ATTENTION_CSV = PROJECT_ROOT / "video audio dataset" / "audio_attention_dataset.csv"
+VIDEO_ATTENTION_CSV = VIDEO_AUDIO_DATA_DIR / "video_attention_dataset.csv"
+AUDIO_ATTENTION_CSV = VIDEO_AUDIO_DATA_DIR / "audio_attention_dataset.csv"
 ATTENTION_CHECKPOINTS_DIR = CHECKPOINTS_DIR / "attention"
 ATTENTION_REPORT_PATH = REPORTS_DIR / "attention_report.md"
 ATTENTION_RESULTS_JSON = REPORTS_DIR / "attention_results.json"
