@@ -1,0 +1,10 @@
+{
+  "model_name": "attention_multimodal_corrected",
+  "best_epoch": 2,
+  "val_loss": 1.0974960327148438,
+  "val_acc": 0.340625,
+  "val_f1_macro": 0.3335943010419677,
+  "val_roc_auc": 0.5162727223048825,
+  "parameters": 13667,
+  "timestamp": "2026-09-12 14:07:08"
+}

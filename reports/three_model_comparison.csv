@@ -1,0 +1,4 @@
+Model,Type,Parameters,Accuracy,Precision,Recall,F1-Score,ROC-AUC,PR-AUC,LogLoss,Training Time (s),Inference Time (s),Peak GPU (MB),Precision@5,Recall@5,NDCG@5,HitRate@5
+1. LSTM + Attention,Knowledge Tracing,"803,201",0.6571,0.6624,0.9735,0.7884,0.5600,0.6897,0.6374,1.85,0.1247,55.1,N/A (KT),N/A (KT),N/A (KT),N/A (KT)
+2. Autoencoder + Recommender,Recommendation,"103,368",N/A (Rec),N/A (Rec),N/A (Rec),N/A (Rec),N/A (Rec),N/A (Rec),N/A (Rec),2.90,0.0024,25.9,0.5194,0.0357,0.5242,0.6736
+3. Transformer + KT,Knowledge Tracing,"824,385",0.6562,0.6568,0.9970,0.7919,0.5559,0.6895,0.6389,2.27,0.1333,43.9,N/A (KT),N/A (KT),N/A (KT),N/A (KT)

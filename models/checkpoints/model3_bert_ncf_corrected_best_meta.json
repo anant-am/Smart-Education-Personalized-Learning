@@ -1,0 +1,9 @@
+{
+  "model_name": "model3_bert_ncf_corrected",
+  "best_epoch": 1,
+  "val_loss": 0.6453895751805273,
+  "val_auc": 0.5274410961246876,
+  "val_acc": 0.6551377925495083,
+  "parameters": 1572737,
+  "timestamp": "2026-09-12 15:30:50"
+}

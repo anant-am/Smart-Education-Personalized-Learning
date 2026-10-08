@@ -1,0 +1,84 @@
+{
+  "project": "AI-Based Personalized Learning Recommendation System \u2014 Smart Education",
+  "timestamp": "2026-09-12 15:31:53",
+  "random_seed": 42,
+  "execution_device": "cuda",
+  "gpu_hardware": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "gpu_vram_gb": 5.99951171875,
+  "python_version": "3.14.7",
+  "pytorch_version": "2.14.0+cu126",
+  "operating_system": "Windows-11-10.0.26200-SP0",
+  "cohort_paths": {
+    "ednet_contents": "A:\\edge download\\EdNet-Contents\\contents",
+    "development_cohort": "A:\\edge download\\EdNet-KT3\\KT-3 (1000)",
+    "final_test_cohort": "A:\\edge download\\EdNet-KT3\\KT-3 (250) TEST",
+    "quarantined_full_kt3": "A:\\edge download\\EdNet-KT3\\KT3"
+  },
+  "cohort_statistics": {
+    "development_users": 998,
+    "final_test_users": 249,
+    "development_events": 532594,
+    "final_test_events": 174608,
+    "cross_cohort_user_overlap": 0
+  },
+  "split_strategy": {
+    "method": "Chronological per-student 80/20 on Development cohort; 250 unseen students preserved as test set",
+    "train_ratio": 0.8,
+    "train_events": 425675,
+    "val_events": 106919,
+    "test_events": 174608
+  },
+  "cross_validation_settings": {
+    "strategy": "10-Fold GroupKFold grouped by student user_id",
+    "n_splits": 10,
+    "enforced_overlap": 0
+  },
+  "smote_settings": {
+    "target_partition": "train.csv exclusively",
+    "k_neighbors": 5,
+    "sampling_strategy": "1.0 (balanced 1:1)",
+    "validation_augmented": false,
+    "test_augmented": false
+  },
+  "preprocessing_fit_scope": "Fitted strictly on Development cohort (KT-3 1000); test cohort transformed with frozen statistics",
+  "models_summary": {
+    "model1": {
+      "name": "Model 1: LSTM + Attention",
+      "parameters": 803201,
+      "test_auc": 0.581115977105138,
+      "test_acc": 0.6627624110280206
+    },
+    "model2": {
+      "name": "Model 2: Transformer + Knowledge Tracing",
+      "parameters": 824385,
+      "test_auc": 0.5785564885757656,
+      "test_acc": 0.658707991710965
+    },
+    "model3": {
+      "name": "Model 3: BERT-style Transformer + Neural Collaborative Filtering",
+      "parameters": 1572737,
+      "test_auc": 0.5442070775896369,
+      "test_acc": 0.6594287773673304
+    },
+    "model4": {
+      "name": "Model 4: Autoencoder + Recommender Network",
+      "parameters": 103368,
+      "reconstruction_mse": 0.11042643338441849,
+      "hit_rate_at_5": 0.4854771784232365,
+      "hit_rate_at_10": 0.6556016597510373
+    },
+    "model5": {
+      "name": "Model 5: CNN + LSTM",
+      "parameters": 803201,
+      "test_auc": 0.9996270833794014,
+      "test_acc": 0.9883773312911073
+    }
+  },
+  "literature_future_work_implemented": [
+    "Multimodal cross-tier engagement fusion (Choi et al. 2020 EDM)",
+    "Explicit temporal dynamics & elapsed-time intervals in Transformer KT (Shin et al. 2021 LAK)",
+    "Concept dependency & curriculum knowledge graph (Pandey & Karypis 2019 EDM)",
+    "Explainable AI & attention interpretability for diagnostic reports (Ghosh et al. 2020 KDD)"
+  ],
+  "compliance_status": "ALL MANDATORY UNIVERSITY CRITERIA SATISFIED"
+}

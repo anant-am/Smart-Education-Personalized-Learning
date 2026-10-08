@@ -1,0 +1,9 @@
+{
+  "model_name": "model2_transformer_initial",
+  "best_epoch": 6,
+  "val_loss": 0.6411036923971388,
+  "val_auc": 0.54814412907853,
+  "val_acc": 0.6554147624982689,
+  "parameters": 824385,
+  "timestamp": "2026-09-12 15:30:08"
+}

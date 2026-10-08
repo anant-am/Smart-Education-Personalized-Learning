@@ -1,0 +1,9 @@
+{
+  "model_name": "model5_cnn_lstm_corrected",
+  "best_epoch": 2,
+  "val_loss": 0.03416886112212014,
+  "val_auc": 0.9992807354568585,
+  "val_acc": 0.9842127129206482,
+  "parameters": 803201,
+  "timestamp": "2026-09-12 15:31:50"
+}

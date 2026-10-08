@@ -1,0 +1,24 @@
+============================================================
+TARGET LEAKAGE CHECK
+============================================================
+  FLAGGED: correct_answer
+    Reason: Directly reveals the correct answer. Combined with user_answer, trivially determines is_correct.
+    Decision: REMOVE before model training
+  FLAGGED: user_answer
+    Reason: The raw answer. Combined with correct_answer from lookup, determines is_correct.
+    Decision: REMOVE before model training
+
+  Safe features verified: 12
+
+============================================================
+DUPLICATE LEAKAGE CHECK
+============================================================
+  Exact duplicate rows: 0
+  Duplicate student-question-timestamp: 0
+
+============================================================
+SUSPICIOUS FEATURES CHECK
+============================================================
+
+  Features removed: correct_answer, user_answer
+  Events after dedup: 532594

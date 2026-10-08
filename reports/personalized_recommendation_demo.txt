@@ -1,0 +1,18 @@
+======================================================================
+PERSONALIZED LEARNING RECOMMENDATION DEMO — STUDENT: u1165
+======================================================================
+Total Student Learning Events in Unseen Test Set: 1,075
+Unique Concepts Attempted: 166
+Identified Learning Gaps (Mastery < 0.60): 84
+
+Top 3 Critical Learning Deficiencies:
+  1. Concept_18 (Concept 18): Empirical Acc = 0.0000 | Attempts = 2
+  2. Concept_157 (Concept 157): Empirical Acc = 0.0000 | Attempts = 3
+  3. Concept_134 (Concept 134): Empirical Acc = 0.0000 | Attempts = 4
+
+Top 5 Personalized Recommended Learning Resources (Actual EdNet Catalog):
+  1. [LECTURE] Resource ID: l432 | Targets: 18 | Part: 1
+  2. [LECTURE] Resource ID: l865 | Targets: 18 | Part: 1
+  3. [EXPLANATION] Resource ID: e99 | Targets: 18 | Part: 1
+  4. [EXPLANATION] Resource ID: e154 | Targets: 18 | Part: 1
+  5. [EXPLANATION] Resource ID: e166 | Targets: 18 | Part: 1

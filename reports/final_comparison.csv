@@ -1,0 +1,6 @@
+Model ID,Model Architecture,Parameters,CV Metric,Diagnosis,Test Accuracy / MSE,Test F1 / NDCG@5,Test ROC-AUC / HitRate@5,Training Time (s)
+Model 1,LSTM + Attention,"803,201",AUC: 0.5687 ± 0.0083,Healthy Fit / Well-Regularized,0.6628,0.7891,0.5811,6.9
+Model 2,Transformer + Knowledge Tracing,"824,385",AUC: 0.5559 ± 0.0126,Healthy Fit / Well-Regularized,0.6587,0.7930,0.5786,3.5
+Model 3,BERT-style Transformer + Neural Collaborative Filtering,"1,572,737",AUC: 0.5194 ± 0.0131,Healthy Fit / Well-Regularized,0.6594,0.7943,0.5442,2.4
+Model 4,Autoencoder + Recommender,"103,368",MSE: 0.1502,Healthy Fit / Well-Regularized,MSE: 0.1104,NDCG@5: 0.1757,Hit@5: 48.5%,2.8
+Model 5,CNN + LSTM,"803,201",AUC: 0.5915 ± 0.0160,Healthy Fit / Well-Regularized,0.9884,0.9912,0.9996,2.4

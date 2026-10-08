@@ -1,0 +1,9 @@
+{
+  "model_name": "model4_autoencoder_corrected",
+  "best_epoch": 7,
+  "val_loss": 0.08859251260757446,
+  "val_auc": 0.5070425949466728,
+  "val_acc": 0.43587,
+  "parameters": 103368,
+  "timestamp": "2026-09-12 15:31:14"
+}

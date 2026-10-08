@@ -1,0 +1,9 @@
+{
+  "model_name": "model1_lstm_corrected",
+  "best_epoch": 1,
+  "val_loss": 0.6391978413650755,
+  "val_auc": 0.5558633660184803,
+  "val_acc": 0.6570765821908323,
+  "parameters": 803201,
+  "timestamp": "2026-09-12 15:28:13"
+}
