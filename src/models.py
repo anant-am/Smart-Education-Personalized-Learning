@@ -17,7 +17,7 @@ All models support:
 """
 
 import math
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, List
 import numpy as np
 import torch
 import torch.nn as nn
@@ -513,6 +513,8 @@ class CNNLSTM(nn.Module):
         self.hidden_dim = hidden_dim
         self.embed_dim = embed_dim
 
+        self.kernel_size = kernel_size
+
         self.q_emb = nn.Embedding(num_questions + 2, embed_dim, padding_idx=0)
         self.part_emb = nn.Embedding(num_parts + 2, embed_dim, padding_idx=0)
         self.tag_emb = nn.Embedding(num_tags + 2, embed_dim, padding_idx=0)
@@ -520,12 +522,12 @@ class CNNLSTM(nn.Module):
 
         self.input_proj = nn.Linear(embed_dim * 4, embed_dim)
 
-        # 1D Temporal Convolution (extracts local practice features)
+        # 1D Strictly Causal Temporal Convolution (extracts local past practice features without future lookahead)
         self.conv1 = nn.Conv1d(
             in_channels=embed_dim,
             out_channels=embed_dim,
             kernel_size=kernel_size,
-            padding=kernel_size // 2
+            padding=0
         )
         self.bn1 = nn.BatchNorm1d(embed_dim)
         self.dropout = nn.Dropout(dropout)
@@ -572,8 +574,10 @@ class CNNLSTM(nn.Module):
         x = self.dropout(x)
 
         # Conv1D requires [Batch, Channels, Length]
+        # Strictly causal left-padding: pad by (kernel_size - 1) on left, 0 on right
         x_conv = x.transpose(1, 2)
-        x_conv = self.conv1(x_conv)
+        x_conv_padded = F.pad(x_conv, (self.kernel_size - 1, 0))
+        x_conv = self.conv1(x_conv_padded)
         x_conv = self.bn1(x_conv)
         x_conv = F.relu(x_conv)
         x_conv = self.dropout(x_conv)

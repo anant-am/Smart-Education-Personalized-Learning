@@ -28,6 +28,9 @@ import glob
 import json
 import pickle
 import warnings
+import csv
+import gc
+import multiprocessing as mp
 from pathlib import Path
 from typing import Dict, List, Tuple, Any, Optional, Set
 from collections import defaultdict, Counter
@@ -46,6 +49,13 @@ from src.leakage_checks import LeakageAuditor
 warnings.filterwarnings('ignore', category=FutureWarning)
 ensure_dirs()
 np.random.seed(RANDOM_SEED)
+
+
+def _worker_parse_file_task(args: Tuple[str, Dict, Dict]) -> Tuple[List[Dict], List[Dict], List[Dict], str, Dict[str, Any]]:
+    """Top-level worker function for multiprocessing parsing."""
+    fpath_str, q_lookup, l_lookup = args
+    return EdNetDataPipeline._parse_user_file_static(fpath_str, q_lookup, l_lookup)
+
 
 
 class EdNetDataPipeline:
@@ -225,51 +235,69 @@ class EdNetDataPipeline:
                 'num_responses': len(responses)
             })
 
-    def parse_user_file(self, fpath: Path, question_lookup: Dict,
-                        lecture_lookup: Dict) -> Tuple[List[Dict], List[Dict], List[Dict]]:
-        """Parses a single student interaction CSV into question, lecture, and explanation events."""
+    @staticmethod
+    def _parse_user_file_static(fpath_str: str, question_lookup: Dict,
+                                lecture_lookup: Dict) -> Tuple[List[Dict], List[Dict], List[Dict], str, Dict[str, Any]]:
+        """Static memory-safe parser using csv.DictReader suitable for both single and multiprocessing."""
+        fpath = Path(fpath_str)
         uid = fpath.stem
         q_events, l_events, e_events = [], [], []
+        stats = {
+            'raw_rows': 0,
+            'unmatched_q': 0,
+            'missing_ans': 0,
+            'skipped': False,
+            'skip_reason': ''
+        }
 
+        rows = []
         try:
-            df_u = pd.read_csv(fpath)
-            if df_u.empty:
-                return q_events, l_events, e_events
-        except Exception:
-            return q_events, l_events, e_events
+            with open(fpath, 'r', encoding='utf-8') as fp:
+                reader = csv.DictReader(fp)
+                for r in reader:
+                    try:
+                        r['ts'] = int(r['timestamp'])
+                        rows.append(r)
+                    except Exception:
+                        continue
+        except Exception as e:
+            stats['skipped'] = True
+            stats['skip_reason'] = f"read_error: {str(e)}"
+            return q_events, l_events, e_events, uid, stats
 
-        df_u = df_u.sort_values('timestamp').reset_index(drop=True)
+        if not rows:
+            stats['skipped'] = True
+            stats['skip_reason'] = "empty_or_corrupt_file"
+            return q_events, l_events, e_events, uid, stats
+
+        stats['raw_rows'] = len(rows)
+        rows.sort(key=lambda r: r['ts'])
+
         current_bundle = None
         bundle_enter_ts = None
         responses_in_bundle = []
         source = 'unknown'
         platform = 'unknown'
 
-        for _, row in df_u.iterrows():
-            try:
-                ts = int(row['timestamp'])
-            except (ValueError, TypeError):
-                continue
-
+        for row in rows:
+            ts = row['ts']
             action = str(row['action_type']).strip().lower()
             item_id = str(row['item_id']).strip()
-            if pd.notna(row.get('source')):
+            if row.get('source'):
                 source = str(row['source']).strip()
-            if pd.notna(row.get('platform')):
+            if row.get('platform'):
                 platform = str(row['platform']).strip()
 
             user_ans = None
-            if pd.notna(row.get('user_answer')):
-                ans_str = str(row['user_answer']).strip().lower()
-                if ans_str != '':
-                    user_ans = ans_str
+            if row.get('user_answer') and str(row['user_answer']).strip().lower() != '':
+                user_ans = str(row['user_answer']).strip().lower()
 
             prefix = ''.join(c for c in item_id if c.isalpha()).lower()
 
             if action == 'enter':
                 if prefix == 'b':
                     if current_bundle and responses_in_bundle:
-                        self._finalize_question_event(
+                        EdNetDataPipeline._finalize_question_event(
                             q_events, uid, current_bundle, bundle_enter_ts,
                             ts, responses_in_bundle, source, platform, question_lookup
                         )
@@ -290,12 +318,17 @@ class EdNetDataPipeline:
                     })
 
             elif action == 'respond':
-                if prefix == 'q' and user_ans:
-                    responses_in_bundle.append((item_id, user_ans, ts))
+                if prefix == 'q':
+                    if user_ans:
+                        responses_in_bundle.append((item_id, user_ans, ts))
+                        if item_id not in question_lookup:
+                            stats['unmatched_q'] += 1
+                    else:
+                        stats['missing_ans'] += 1
 
             elif action == 'submit':
                 if prefix == 'b' and current_bundle == item_id and responses_in_bundle:
-                    self._finalize_question_event(
+                    EdNetDataPipeline._finalize_question_event(
                         q_events, uid, current_bundle, bundle_enter_ts,
                         ts, responses_in_bundle, source, platform, question_lookup
                     )
@@ -304,32 +337,76 @@ class EdNetDataPipeline:
                     responses_in_bundle = []
 
         if current_bundle and responses_in_bundle:
-            self._finalize_question_event(
+            EdNetDataPipeline._finalize_question_event(
                 q_events, uid, current_bundle, bundle_enter_ts,
                 (bundle_enter_ts + 60000) if bundle_enter_ts else None,
                 responses_in_bundle, source, platform, question_lookup
             )
 
+        return q_events, l_events, e_events, uid, stats
+
+    def parse_user_file(self, fpath: Path, question_lookup: Dict,
+                        lecture_lookup: Dict) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+        """Parses a single student interaction CSV into question, lecture, and explanation events."""
+        q_events, l_events, e_events, _, _ = self._parse_user_file_static(str(fpath), question_lookup, lecture_lookup)
         return q_events, l_events, e_events
 
     def process_cohort_files(self, file_paths: List[Path], cohort_name: str,
                              question_lookup: Dict, lecture_lookup: Dict,
-                             batch_size: int = 500) -> Tuple[List[Dict], List[Dict], List[Dict], List[str]]:
+                             batch_size: int = 500,
+                             num_workers: Optional[int] = None) -> Tuple[List[Dict], List[Dict], List[Dict], List[str]]:
         """
-        Processes list of student interaction files with progress monitoring.
+        Processes list of student interaction files with multiprocessing and progress monitoring.
         """
         print(f"  Ingesting {cohort_name}: {len(file_paths):,} files...")
         q_events, l_events, e_events = [], [], []
         user_ids = []
 
-        for fpath in tqdm(file_paths, desc=f"  {cohort_name}"):
-            uid = fpath.stem
-            user_ids.append(uid)
-            q_ev, l_ev, e_ev = self.parse_user_file(fpath, question_lookup, lecture_lookup)
-            q_events.extend(q_ev)
-            l_events.extend(l_ev)
-            e_events.extend(e_ev)
+        cohort_stats = {
+            'total_files': len(file_paths),
+            'processed_files': 0,
+            'skipped_files': 0,
+            'skip_reasons': Counter(),
+            'total_raw_rows': 0,
+            'unmatched_q': 0,
+            'missing_ans': 0,
+        }
 
+        workers = num_workers or min(16, os.cpu_count() or 4)
+        if len(file_paths) > 200 and workers > 1:
+            tasks = [(str(fp), question_lookup, lecture_lookup) for fp in file_paths]
+            with mp.Pool(processes=workers) as pool:
+                for q_ev, l_ev, e_ev, uid, st in tqdm(pool.imap(_worker_parse_file_task, tasks, chunksize=100),
+                                                      total=len(tasks), desc=f"  {cohort_name}"):
+                    user_ids.append(uid)
+                    q_events.extend(q_ev)
+                    l_events.extend(l_ev)
+                    e_events.extend(e_ev)
+                    cohort_stats['total_raw_rows'] += st['raw_rows']
+                    cohort_stats['unmatched_q'] += st['unmatched_q']
+                    cohort_stats['missing_ans'] += st['missing_ans']
+                    if st['skipped']:
+                        cohort_stats['skipped_files'] += 1
+                        cohort_stats['skip_reasons'][st['skip_reason']] += 1
+                    else:
+                        cohort_stats['processed_files'] += 1
+        else:
+            for fpath in tqdm(file_paths, desc=f"  {cohort_name}"):
+                q_ev, l_ev, e_ev, uid, st = self._parse_user_file_static(str(fpath), question_lookup, lecture_lookup)
+                user_ids.append(uid)
+                q_events.extend(q_ev)
+                l_events.extend(l_ev)
+                e_events.extend(e_ev)
+                cohort_stats['total_raw_rows'] += st['raw_rows']
+                cohort_stats['unmatched_q'] += st['unmatched_q']
+                cohort_stats['missing_ans'] += st['missing_ans']
+                if st['skipped']:
+                    cohort_stats['skipped_files'] += 1
+                    cohort_stats['skip_reasons'][st['skip_reason']] += 1
+                else:
+                    cohort_stats['processed_files'] += 1
+
+        self.last_cohort_stats = cohort_stats
         return q_events, l_events, e_events, user_ids
 
     def process_cohort_directory(self, dir_path: Path, cohort_name: str,
@@ -343,31 +420,47 @@ class EdNetDataPipeline:
 
     @staticmethod
     def derive_sequential_features(df: pd.DataFrame) -> pd.DataFrame:
-        """Derives past-only lag features within each student interaction sequence."""
+        """Derives past-only lag features within each student interaction sequence in a fast, memory-safe manner."""
         df = df.sort_values(['user_id', 'enter_ts']).reset_index(drop=True)
+        n = len(df)
+        if n == 0:
+            for col in ['attempt_count', 'previous_accuracy', 'recent_accuracy_5', 'time_since_prev_ms']:
+                df[col] = []
+            return df
 
-        prev_accs = []
-        recent_5_accs = []
-        attempt_counts = []
-        time_since_prevs = []
+        uids = df['user_id'].values
+        corrects = df['is_correct'].values.astype(np.float32)
+        timestamps = df['enter_ts'].values.astype(np.int64)
 
-        for _, group in df.groupby('user_id', sort=False):
-            corrects = group['is_correct'].values
-            timestamps = group['enter_ts'].values
-            n = len(corrects)
+        change_indices = np.where(uids[:-1] != uids[1:])[0] + 1
+        split_starts = np.concatenate(([0], change_indices))
+        split_ends = np.concatenate((change_indices, [n]))
 
-            for i in range(n):
-                attempt_counts.append(i)
-                if i == 0:
-                    prev_accs.append(0.5)
-                    recent_5_accs.append(0.5)
-                    time_since_prevs.append(0.0)
-                else:
-                    prev_accs.append(float(np.mean(corrects[:i])))
-                    w = max(0, i - 5)
-                    recent_5_accs.append(float(np.mean(corrects[w:i])))
-                    dt = float(timestamps[i] - timestamps[i - 1])
-                    time_since_prevs.append(max(0.0, dt))
+        attempt_counts = np.empty(n, dtype=np.int32)
+        prev_accs = np.empty(n, dtype=np.float32)
+        recent_5_accs = np.empty(n, dtype=np.float32)
+        time_since_prevs = np.empty(n, dtype=np.float32)
+
+        for start, end in zip(split_starts, split_ends):
+            m = end - start
+            attempt_counts[start:end] = np.arange(m, dtype=np.int32)
+            u_corr = corrects[start:end]
+            u_ts = timestamps[start:end]
+
+            time_since_prevs[start] = 0.0
+            if m > 1:
+                time_since_prevs[start + 1:end] = np.maximum(0.0, np.diff(u_ts))
+
+            prev_accs[start] = 0.5
+            if m > 1:
+                cum = np.cumsum(u_corr[:-1])
+                denom = np.arange(1, m, dtype=np.float32)
+                prev_accs[start + 1:end] = cum / denom
+
+            recent_5_accs[start] = 0.5
+            for i in range(1, m):
+                w = max(0, i - 5)
+                recent_5_accs[start + i] = np.mean(u_corr[w:i])
 
         df['attempt_count'] = attempt_counts
         df['previous_accuracy'] = prev_accs

@@ -1,9 +1,9 @@
 {
   "model_name": "model",
-  "best_epoch": 2,
-  "val_loss": 0.16213054127163357,
-  "val_auc": 0.49566548404538757,
-  "val_acc": 0.5040404040404041,
-  "parameters": 103368,
-  "timestamp": "2026-09-12 15:31:09"
+  "best_epoch": 1,
+  "val_loss": 0.0289484191013691,
+  "val_auc": 0.4670773844658666,
+  "val_acc": 0.5090134836195092,
+  "parameters": 25768,
+  "timestamp": "2026-10-12 14:28:44"
 }

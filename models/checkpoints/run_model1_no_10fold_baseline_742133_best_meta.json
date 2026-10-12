@@ -1,0 +1,9 @@
+{
+  "model_name": "run_model1_no_10fold_baseline_742133",
+  "best_epoch": 2,
+  "val_loss": 0.6482424928168928,
+  "val_auc": 0.6456888109262978,
+  "val_acc": 0.6225992601867585,
+  "parameters": 817089,
+  "timestamp": "2026-10-12 15:44:00"
+}

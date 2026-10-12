@@ -6,8 +6,8 @@
 ## 1. Quantitative Class Rebalancing Summary
 | Split / Status | Class 0 (Incorrect) | Class 1 (Correct) | Total Samples | Imbalance Ratio (0:1) |
 |---|---|---|---|---|
-| **Before ADASYN (train.csv)** | 124,998 (31.5%) | 271,292 (68.5%) | 396,290 | 0.461 : 1 |
-| **After ADASYN (train_adasyn_flat.csv)** | 258,614 (48.8%) | 271,292 (51.2%) | 529,906 | 0.953 : 1 |
+| **Before ADASYN (train.csv)** | 70,253 (35.1%) | 129,747 (64.9%) | 200,000 | 0.541 : 1 |
+| **After ADASYN (train_adasyn_flat.csv)** | 132,703 (50.6%) | 129,747 (49.4%) | 262,450 | 1.023 : 1 |
 
 ## 2. Theoretical Mechanism & Academic Justification
 - **Adaptive Density Distribution:** Unlike standard SMOTE, which generates synthetic minority examples uniformly along $k$-NN segments, ADASYN uses a density distribution $\Gamma_i = r_i / \sum r_i$ where $r_i = \Delta_i / K$ (the proportion of majority-class examples among $K$ nearest neighbors of minority instance $x_i$).

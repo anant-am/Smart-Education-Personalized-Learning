@@ -109,9 +109,12 @@ class MultiModelInferenceEngine:
         t0 = time.time()
 
         # Model 1: LSTM + Attention
-        m1_path = CHECKPOINTS_DIR / "model1_lstm_corrected_best.pth"
-        if not m1_path.exists():
-            m1_path = CHECKPOINTS_DIR / "model1_lstm_best.pth"
+        m1_candidates = [
+            CHECKPOINTS_DIR / "run_model1_no_10fold_baseline_742133_best.pth",
+            CHECKPOINTS_DIR / "model1_lstm_corrected_best.pth",
+            CHECKPOINTS_DIR / "model1_lstm_best.pth"
+        ]
+        m1_path = next((p for p in m1_candidates if p.exists()), m1_candidates[-1])
         m1_sd = torch.load(m1_path, map_location=self.device, weights_only=False)
         m1_nq = m1_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m1_sd else self.num_questions
         m1_np = m1_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m1_sd else self.num_parts
@@ -122,9 +125,12 @@ class MultiModelInferenceEngine:
         print(f"  [OK] Model 1 (LSTM + Attention) Loaded       : {m1_path.name}")
 
         # Model 2: Transformer + Knowledge Tracing
-        m2_path = CHECKPOINTS_DIR / "model2_transformer_corrected_best.pth"
-        if not m2_path.exists():
-            m2_path = CHECKPOINTS_DIR / "model2_transformer_best.pth"
+        m2_candidates = [
+            CHECKPOINTS_DIR / "run_model2_no_10fold_baseline_f2609b_best.pth",
+            CHECKPOINTS_DIR / "model2_transformer_corrected_best.pth",
+            CHECKPOINTS_DIR / "model2_transformer_best.pth"
+        ]
+        m2_path = next((p for p in m2_candidates if p.exists()), m2_candidates[-1])
         m2_sd = torch.load(m2_path, map_location=self.device, weights_only=False)
         m2_nq = m2_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m2_sd else self.num_questions
         m2_np = m2_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m2_sd else self.num_parts
@@ -135,9 +141,13 @@ class MultiModelInferenceEngine:
         print(f"  [OK] Model 2 (Transformer + KT) Loaded       : {m2_path.name}")
 
         # Model 3: BERT-style + NCF
-        m3_path = CHECKPOINTS_DIR / "model3_bert_ncf_corrected_best.pth"
-        if not m3_path.exists():
-            m3_path = CHECKPOINTS_DIR / "model3_bert_ncf_best.pth"
+        m3_candidates = [
+            CHECKPOINTS_DIR / "run_model3_no_10fold_baseline_11352f_best.pth",
+            CHECKPOINTS_DIR / "run_model3_no_10fold_baseline_11352f_corrected_best.pth",
+            CHECKPOINTS_DIR / "model3_bert_ncf_corrected_best.pth",
+            CHECKPOINTS_DIR / "model3_bert_ncf_best.pth"
+        ]
+        m3_path = next((p for p in m3_candidates if p.exists()), m3_candidates[-1])
         m3_sd = torch.load(m3_path, map_location=self.device, weights_only=False)
         m3_nq = m3_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m3_sd else self.num_questions
         m3_np = m3_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m3_sd else self.num_parts
@@ -148,20 +158,26 @@ class MultiModelInferenceEngine:
         print(f"  [OK] Model 3 (BERT-style + NCF) Loaded       : {m3_path.name}")
 
         # Model 4: Autoencoder + Recommender
-        m4_path = CHECKPOINTS_DIR / "model4_autoencoder_corrected_best.pth"
-        if not m4_path.exists():
-            m4_path = CHECKPOINTS_DIR / "model4_autoencoder_best.pth"
+        m4_candidates = [
+            CHECKPOINTS_DIR / "run_model4_no_10fold_baseline_a2ad76_best.pth",
+            CHECKPOINTS_DIR / "model4_autoencoder_corrected_best.pth",
+            CHECKPOINTS_DIR / "model4_autoencoder_best.pth"
+        ]
+        m4_path = next((p for p in m4_candidates if p.exists()), m4_candidates[-1])
         m4_sd = torch.load(m4_path, map_location=self.device, weights_only=False)
-        m4_dim = m4_sd['encoder.0.weight'].shape[1] if 'encoder.0.weight' in m4_sd else 500
+        m4_dim = m4_sd['encoder.0.weight'].shape[1] if 'encoder.0.weight' in m4_sd else 100
         self.m4 = AutoencoderRecommender(input_dim=m4_dim, latent_dim=32, hidden_dim=64, num_resources=m4_dim).to(self.device)
         self.m4.load_state_dict(m4_sd)
         self.m4.eval()
         print(f"  [OK] Model 4 (Autoencoder Recommender) Loaded: {m4_path.name}")
 
         # Model 5: CNN + LSTM
-        m5_path = CHECKPOINTS_DIR / "model5_cnn_lstm_corrected_best.pth"
-        if not m5_path.exists():
-            m5_path = CHECKPOINTS_DIR / "model5_cnn_lstm_best.pth"
+        m5_candidates = [
+            CHECKPOINTS_DIR / "run_model5_no_10fold_baseline_3377d7_best.pth",
+            CHECKPOINTS_DIR / "model5_cnn_lstm_corrected_best.pth",
+            CHECKPOINTS_DIR / "model5_cnn_lstm_best.pth"
+        ]
+        m5_path = next((p for p in m5_candidates if p.exists()), m5_candidates[-1])
         m5_sd = torch.load(m5_path, map_location=self.device, weights_only=False)
         m5_nq = m5_sd['q_emb.weight'].shape[0] - 2 if 'q_emb.weight' in m5_sd else self.num_questions
         m5_np = m5_sd['part_emb.weight'].shape[0] - 2 if 'part_emb.weight' in m5_sd else self.num_parts
@@ -205,13 +221,14 @@ class MultiModelInferenceEngine:
             model_knowledge_state = self.m1.compute_knowledge_state(inputs, mask)
 
             # Model 4 (Autoencoder) Profile Scoring
-            profile_vec = torch.zeros(1, 500, device=self.device)
+            m4_in_dim = getattr(self.m4, 'input_dim', 100)
+            profile_vec = torch.zeros(1, m4_in_dim, device=self.device)
             for ev in sequence_events:
                 q_idx = ev.get('question_id', 0)
-                if q_idx < 500:
+                if q_idx < m4_in_dim:
                     profile_vec[0, q_idx] = 1.0 if ev.get('is_correct', 0) == 1 else 0.5
             _, rec_scores = self.m4(profile_vec)
-            top_rec_indices = torch.topk(rec_scores[0], k=5).indices.cpu().numpy()
+            top_rec_indices = torch.topk(rec_scores[0], k=min(5, m4_in_dim)).indices.cpu().numpy()
 
         inference_time_ms = (time.time() - t_start) * 1000
 
@@ -254,28 +271,24 @@ class MultiModelInferenceEngine:
 
     def predict_student_by_id(self, student_id: str, split: str = "test") -> Optional[Dict[str, Any]]:
         """
-        Loads a student's interaction stream from test.csv or train.csv and runs prediction.
+        Loads a student's interaction stream from test.csv, sample_test_students.csv, or other splits.
         """
-        file_path = PROCESSED_DATA_DIR / f"{split}.csv"
-        if not file_path.exists():
-            print(f"  [ERROR] {file_path.name} not found.")
-            return None
+        candidate_splits = [split, "test", "sample_test_students", "test_sample", "test_unseen_250", "val", "train"]
+        student_rows = pd.DataFrame()
+        found_split = split
 
-        # Filter student rows
-        df = pd.read_csv(file_path)
-        student_rows = df[df['user_id'] == student_id]
-
-        if student_rows.empty:
-            # Try searching in other splits
-            for alt_split in ["val", "train", "test_unseen_250", "train_dev"]:
-                alt_path = PROCESSED_DATA_DIR / f"{alt_split}.csv"
-                if alt_path.exists():
-                    alt_df = pd.read_csv(alt_path)
-                    alt_rows = alt_df[alt_df['user_id'] == student_id]
-                    if not alt_rows.empty:
-                        student_rows = alt_rows
-                        split = alt_split
+        for s in candidate_splits:
+            file_path = PROCESSED_DATA_DIR / f"{s}.csv"
+            if file_path.exists():
+                try:
+                    df = pd.read_csv(file_path)
+                    matches = df[df['user_id'] == student_id]
+                    if not matches.empty:
+                        student_rows = matches
+                        found_split = s
                         break
+                except Exception:
+                    continue
 
         if student_rows.empty:
             print(f"  [NOT FOUND] Student '{student_id}' does not exist in dataset.")

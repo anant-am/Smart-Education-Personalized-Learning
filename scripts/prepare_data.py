@@ -127,20 +127,57 @@ def main(mode: Optional[str] = None, max_users: Optional[int] = None, force_repr
     train_q, dev_l, dev_e, _ = pipeline.process_cohort_files(
         train_files, f"Training Cohort ({len(train_files):,} users)", q_lookup, l_lookup
     )
-    val_q, _, _, _ = pipeline.process_cohort_files(
+    train_stats = dict(getattr(pipeline, 'last_cohort_stats', {}))
+
+    val_q, val_l, val_e, _ = pipeline.process_cohort_files(
         val_files, f"Validation Cohort ({len(val_files):,} users)", q_lookup, l_lookup
     )
+    val_stats = dict(getattr(pipeline, 'last_cohort_stats', {}))
+
     test_q, test_l, test_e, _ = pipeline.process_cohort_files(
         test_files, f"Frozen Test Cohort ({len(test_files):,} users)", q_lookup, l_lookup
     )
+    test_stats = dict(getattr(pipeline, 'last_cohort_stats', {}))
 
-    print(f"  Extracted question events: Train = {len(train_q):,} | Val = {len(val_q):,} | Frozen Test = {len(test_q):,}")
+    # Aggregate full audit statistics
+    total_processed_files = train_stats.get('processed_files', 0) + val_stats.get('processed_files', 0) + test_stats.get('processed_files', 0)
+    total_skipped_files = train_stats.get('skipped_files', 0) + val_stats.get('skipped_files', 0) + test_stats.get('skipped_files', 0)
+    total_raw_rows = train_stats.get('total_raw_rows', 0) + val_stats.get('total_raw_rows', 0) + test_stats.get('total_raw_rows', 0)
+    total_unmatched_q = train_stats.get('unmatched_q', 0) + val_stats.get('unmatched_q', 0) + test_stats.get('unmatched_q', 0)
+    total_missing_ans = train_stats.get('missing_ans', 0) + val_stats.get('missing_ans', 0) + test_stats.get('missing_ans', 0)
+    total_q_events = len(train_q) + len(val_q) + len(test_q)
+    all_l_events = (dev_l or []) + (val_l or []) + (test_l or [])
+    all_e_events = (dev_e or []) + (val_e or []) + (test_e or [])
+    total_interaction_events = total_q_events + len(all_l_events) + len(all_e_events)
+
+    print(f"\n  ================ INGESTION & INTERACTION AUDIT ================")
+    print(f"  Discovered student files:      {actual_user_count:,}")
+    print(f"  Cohort students selected:      {len(cohort_files):,}")
+    print(f"  Users successfully processed:  {total_processed_files:,}")
+    print(f"  Users skipped:                 {total_skipped_files:,}")
+    print(f"  Total raw interaction rows:    {total_raw_rows:,}")
+    print(f"  Question interaction events:   {total_q_events:,} (Train: {len(train_q):,}, Val: {len(val_q):,}, Test: {len(test_q):,})")
+    print(f"  Explanation interaction events: {len(all_e_events):,}")
+    print(f"  Lecture interaction events:     {len(all_l_events):,}")
+    print(f"  Total educational events (Q+L+E): {total_interaction_events:,}")
+    print(f"  Unmatched question IDs:        {total_unmatched_q:,}")
+    print(f"  Missing/invalid answers:       {total_missing_ans:,}")
+    print(f"  ================================================================")
 
     # Step 4: Fit scalers & vocabularies on Train ONLY, transform val and test with frozen parameters
     print("\n[Step 4] Fitting Vocabularies & Scalers Exclusively on Training Partition...")
     train_df, metadata = pipeline.fit_and_transform_dev(train_q)
+    del train_q
+    import gc; gc.collect()
+
     val_df = pipeline.transform_test_cohort(val_q, metadata)
+    del val_q
+    gc.collect()
+
     test_df = pipeline.transform_test_cohort(test_q, metadata)
+    del test_q
+    gc.collect()
+
     dev_df = pd.concat([train_df, val_df], ignore_index=True)
 
     # Step 5: Verify zero user overlap across all partitions
@@ -169,16 +206,20 @@ def main(mode: Optional[str] = None, max_users: Optional[int] = None, force_repr
     questions_df.to_csv(PROCESSED_DATA_DIR / "questions_contents.csv", index=False)
     lectures_df.to_csv(PROCESSED_DATA_DIR / "lectures_contents.csv", index=False)
 
-    if dev_l:
-        pd.DataFrame(dev_l).to_csv(PROCESSED_DATA_DIR / "lecture_events.csv", index=False)
-    if dev_e:
-        pd.DataFrame(dev_e).to_csv(PROCESSED_DATA_DIR / "explanation_events.csv", index=False)
+    if all_l_events:
+        pd.DataFrame(all_l_events).to_csv(PROCESSED_DATA_DIR / "lecture_events.csv", index=False)
+    if all_e_events:
+        pd.DataFrame(all_e_events).to_csv(PROCESSED_DATA_DIR / "explanation_events.csv", index=False)
 
     print(f"  Saved: train_dev.csv ({len(dev_df):,} rows, {dev_df['user_id'].nunique():,} users)")
     print(f"  Saved: train.csv     ({len(train_df):,} rows, {train_df['user_id'].nunique():,} users)")
     print(f"  Saved: val.csv       ({len(val_df):,} rows, {val_df['user_id'].nunique():,} users)")
     print(f"  Saved: test.csv      ({len(test_df):,} rows, {test_df['user_id'].nunique():,} users)")
     print(f"  Saved: metadata.pkl  ({metadata['num_questions']:,} questions, {metadata['num_tags']} tags)")
+    if all_l_events:
+        print(f"  Saved: lecture_events.csv ({len(all_l_events):,} rows)")
+    if all_e_events:
+        print(f"  Saved: explanation_events.csv ({len(all_e_events):,} rows)")
 
     # Step 7: Comprehensive Leakage Auditing (Checks A through G)
     print("\n[Step 7] Executing Comprehensive Data Leakage Audits (Checks A through G)...")
@@ -241,9 +282,18 @@ def main(mode: Optional[str] = None, max_users: Optional[int] = None, force_repr
         'cohort_users': len(cohort_files),
         'train_dev_users': len(train_dev_uids),
         'test_users': len(test_uids),
+        'processed_files': total_processed_files,
+        'skipped_files': total_skipped_files,
+        'total_raw_rows': total_raw_rows,
+        'unmatched_q': total_unmatched_q,
+        'missing_ans': total_missing_ans,
         'train_events': len(train_df),
         'val_events': len(val_df),
         'test_events': len(test_df),
+        'total_q_events': total_q_events,
+        'lecture_events': len(all_l_events),
+        'explanation_events': len(all_e_events),
+        'total_events': total_interaction_events,
         'leakage_passed': all_leakage_passed,
         'elapsed_sec': elapsed_sec
     }

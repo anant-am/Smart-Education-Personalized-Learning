@@ -49,6 +49,8 @@ class AcademicSMOTEHandler:
         # Verify required columns exist
         available_cols = [c for c in feature_cols if c in train_df.columns]
         train_clean = train_df.dropna(subset=available_cols + ['is_correct']).copy()
+        if len(train_clean) > 200000:
+            train_clean = train_clean.sample(200000, random_state=self.random_seed)
 
         X_tr = train_clean[available_cols].values
         y_tr = train_clean['is_correct'].values.astype(int)
@@ -144,6 +146,8 @@ class AcademicADASYNHandler:
 
         available_cols = [c for c in feature_cols if c in train_df.columns]
         train_clean = train_df.dropna(subset=available_cols + ['is_correct']).copy()
+        if len(train_clean) > 200000:
+            train_clean = train_clean.sample(200000, random_state=self.random_seed)
 
         X_tr = train_clean[available_cols].values
         y_tr = train_clean['is_correct'].values.astype(int)

@@ -82,8 +82,14 @@ class TestSmartEducationRegression(unittest.TestCase):
     # ── Test C: Existing five models still infer as before ──
     def test_C_existing_five_models_infer(self):
         from main import MultiModelInferenceEngine
+        import pandas as pd
+        test_csv_path = PROCESSED_DATA_DIR / "test.csv"
+        if test_csv_path.exists():
+            student_id = str(pd.read_csv(test_csv_path)["user_id"].iloc[0])
+        else:
+            student_id = "u1165"
         engine = MultiModelInferenceEngine(device="cpu")
-        res = engine.predict_student_by_id("u1165", split="test")
+        res = engine.predict_student_by_id(student_id, split="test")
         self.assertIsNotNone(res)
         self.assertIn("predictions", res)
         self.assertIn("Model 1 (LSTM + Attention)", res["predictions"])
@@ -118,6 +124,7 @@ class TestSmartEducationRegression(unittest.TestCase):
         self.assertEqual(len(gaps), 1)
 
     # ── Test F: New attention dataset loads without leakage ──
+    @unittest.skipUnless(VIDEO_ATTENTION_CSV.exists() and AUDIO_ATTENTION_CSV.exists(), "Raw video/audio attention CSV files not present")
     def test_F_attention_datasets_load(self):
         prep = AttentionPreprocessor()
         v_df, a_df = prep.load_and_audit_data()
@@ -130,6 +137,7 @@ class TestSmartEducationRegression(unittest.TestCase):
         self.assertNotIn("Target", AUDIO_FEATURE_NAMES)
 
     # ── Test G: Attention preprocessing & scaling work ──
+    @unittest.skipUnless(VIDEO_ATTENTION_CSV.exists() and AUDIO_ATTENTION_CSV.exists(), "Raw video/audio attention CSV files not present")
     def test_G_attention_preprocessing(self):
         prep = AttentionPreprocessor()
         v_df, a_df = prep.load_and_audit_data()

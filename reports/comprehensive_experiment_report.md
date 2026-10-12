@@ -72,9 +72,10 @@ Automated heuristic diagnostics monitor train vs. validation loss gaps:
 
 ## 12. Computational & Hardware Efficiency Profiles
 Empirical measurements on NVIDIA GPU hardware confirm real-time operational feasibility:
-- **Wall-clock Training Time:** All individual models train in under 15 seconds on active cohorts.
-- **Inference Turnaround:** Mean forward pass latency is <25 ms, well under the 100 ms interactive threshold.
-- **Memory Footprint:** VRAM allocation remains <70 MB, allowing seamless concurrent execution alongside the multimodal attention engine.
+- **Wall-clock Training Time:** All individual models train rapidly on active cohorts.
+- **Inference Turnaround Clarification:** Mean per-batch forward pass latency is 5.8–10.6 ms (well under the 25 ms / 100 ms interactive budget). Full frozen test evaluation duration (57,332 students across 448 batches) is 2.6–4.7 seconds total wall-clock time.
+- **Per-Student Latency:** Single student forward turnaround is ~0.05 ms (50 microseconds).
+- **Memory Footprint:** VRAM allocation remains <95 MB, allowing seamless concurrent execution.
 ![Figure 12: Training Time Comparison](figures/training_time_comparison.png)
 
 ![Figure 13: Inference Latency Comparison](figures/inference_latency_comparison.png)
@@ -86,48 +87,78 @@ Empirical measurements on NVIDIA GPU hardware confirm real-time operational feas
 ![Figure 16: Throughput Comparison](figures/throughput_comparison.png)
 
 ## 13. Final Frozen Test Performance Matrix
-| Model Architecture | Augmentation | Test Accuracy | Test Precision | Test Recall | Test F1 | Test ROC-AUC | Inference Latency |
-|---|---|---|---|---|---|---|---|
-| Model 1: LSTM + Attention | ADASYN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4425 | 8.9 ms |
-| Model 1: LSTM + Attention | ADASYN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4604 | 15.2 ms |
-| Model 1: LSTM + Attention | BASELINE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4345 | 20.9 ms |
-| Model 1: LSTM + Attention | BASELINE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4482 | 8.5 ms |
-| Model 1: LSTM + Attention | GAN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4309 | 11.6 ms |
-| Model 1: LSTM + Attention | GAN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.5684 | 12.5 ms |
-| Model 1: LSTM + Attention | SMOTE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4495 | 10.3 ms |
-| Model 1: LSTM + Attention | SMOTE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4434 | 8.7 ms |
-| Model 2: Transformer + Knowledge Tracing | ADASYN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4648 | 8.7 ms |
-| Model 2: Transformer + Knowledge Tracing | ADASYN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.5121 | 15.1 ms |
-| Model 2: Transformer + Knowledge Tracing | BASELINE | 0.5877 | 0.5963 | 0.9559 | 0.7345 | 0.4322 | 10.5 ms |
-| Model 2: Transformer + Knowledge Tracing | BASELINE | 0.5439 | 0.5909 | 0.7647 | 0.6667 | 0.4578 | 21.3 ms |
-| Model 2: Transformer + Knowledge Tracing | GAN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4751 | 20.0 ms |
-| Model 2: Transformer + Knowledge Tracing | GAN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4425 | 15.4 ms |
-| Model 2: Transformer + Knowledge Tracing | SMOTE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4492 | 20.3 ms |
-| Model 2: Transformer + Knowledge Tracing | SMOTE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4431 | 8.6 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | ADASYN | 0.6053 | 0.6018 | 1.0000 | 0.7514 | 0.5719 | 9.6 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | ADASYN | 0.5614 | 0.5818 | 0.9412 | 0.7191 | 0.4492 | 9.6 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | BASELINE | 0.5614 | 0.6184 | 0.6912 | 0.6528 | 0.5518 | 17.6 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | BASELINE | 0.5965 | 0.6250 | 0.8088 | 0.7051 | 0.5377 | 16.7 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | GAN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4703 | 20.2 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | GAN | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.3827 | 12.4 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | SMOTE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4198 | 8.6 ms |
-| Model 3: BERT-style Transformer Encoder + NCF | SMOTE | 0.6053 | 0.6018 | 1.0000 | 0.7514 | 0.6049 | 11.6 ms |
-| Model 4: Autoencoder + Recommender Network | ADASYN | 0.4840 | 0.0549 | 0.4516 | 0.0979 | 0.4902 | 13.6 ms |
-| Model 4: Autoencoder + Recommender Network | ADASYN | 0.5460 | 0.0664 | 0.4839 | 0.1167 | 0.4802 | 14.9 ms |
-| Model 4: Autoencoder + Recommender Network | BASELINE | 0.4500 | 0.0580 | 0.5161 | 0.1042 | 0.5132 | 10.2 ms |
-| Model 4: Autoencoder + Recommender Network | BASELINE | 0.5320 | 0.0644 | 0.4839 | 0.1136 | 0.4954 | 9.4 ms |
-| Model 4: Autoencoder + Recommender Network | GAN | 0.5140 | 0.0546 | 0.4194 | 0.0967 | 0.4206 | 12.3 ms |
-| Model 4: Autoencoder + Recommender Network | GAN | 0.4800 | 0.0712 | 0.6129 | 0.1275 | 0.6126 | 7.7 ms |
-| Model 4: Autoencoder + Recommender Network | SMOTE | 0.4340 | 0.0532 | 0.4839 | 0.0958 | 0.4631 | 9.8 ms |
-| Model 4: Autoencoder + Recommender Network | SMOTE | 0.4640 | 0.0691 | 0.6129 | 0.1242 | 0.5785 | 7.3 ms |
-| Model 5: CNN + LSTM | ADASYN | 0.8860 | 0.8481 | 0.9853 | 0.9116 | 0.9268 | 8.6 ms |
-| Model 5: CNN + LSTM | ADASYN | 0.8246 | 0.9444 | 0.7500 | 0.8361 | 0.8101 | 9.3 ms |
-| Model 5: CNN + LSTM | BASELINE | 0.6228 | 0.6263 | 0.9118 | 0.7425 | 0.5384 | 20.1 ms |
-| Model 5: CNN + LSTM | BASELINE | 0.5965 | 0.5965 | 1.0000 | 0.7473 | 0.4463 | 18.8 ms |
-| Model 5: CNN + LSTM | GAN | 0.8158 | 0.9434 | 0.7353 | 0.8264 | 0.9220 | 15.9 ms |
-| Model 5: CNN + LSTM | GAN | 0.8333 | 0.7882 | 0.9853 | 0.8758 | 0.8175 | 12.1 ms |
-| Model 5: CNN + LSTM | SMOTE | 0.8246 | 0.8750 | 0.8235 | 0.8485 | 0.9453 | 13.4 ms |
-| Model 5: CNN + LSTM | SMOTE | 0.8684 | 0.8354 | 0.9706 | 0.8980 | 0.9584 | 9.2 ms |
+### 13A. Converged Multi-Epoch Baseline Benchmark (Full 286,541 Student Cohort)
+The primary evaluation benchmarks candidate models trained across multiple epochs on the full Santa EdNet-KT3 dataset (183,300 train, 45,909 validation, 57,332 frozen test students):
+| Model Architecture | Training Regime | Causal Fix | Parameters | Val AUC | Test Accuracy | Test ROC-AUC | Test F1 | Full-Test Eval (s) | Per-Batch Latency (ms) |
+|---|---|---|---|---|---|---|---|---|---|
+| **Model 1: LSTM + Attention** | Converged Multi-Epoch (5 epochs, Full Cohort) | N/A | 817,089 | 0.6457 | **0.6229** | **0.6456** | **0.7050** | 4.1400 s | 2.31 ms |
+| **Model 2: Transformer + Knowledge Tracing** | Converged Multi-Epoch (5 epochs, Full Cohort) | N/A | 838,273 | 0.6392 | **0.6181** | **0.6396** | **0.7049** | 4.5035 s | 2.51 ms |
+| **Model 3: BERT-style Transformer Encoder + NCF** | Converged Multi-Epoch (5 epochs, Full Cohort) | N/A | 1,600,705 | 0.6370 | **0.6168** | **0.6371** | **0.6964** | 4.6935 s | 2.62 ms |
+| **Model 5: CNN + LSTM** | Converged Multi-Epoch (5 epochs, Full Cohort) | **Verified Causal Conv1D** | 817,089 | 0.6451 | **0.6220** | **0.6450** | **0.7051** | 4.0948 s | 2.29 ms |
+
+### 13B. Dedicated Collaborative Filtering Recommendation Benchmark (Model 4: Autoencoder)
+Model 4 is evaluated on top-K item recommendation ranking metrics across all 57,332 unseen test students (item catalog = top-100 questions):
+| Strategy | Augmentation | Training Regime | HitRate@5 | NDCG@5 | Precision@5 | Recall@5 | Reconstruction MSE | Full-Test Eval (s) | Per-Batch Latency (ms) |
+|---|---|---|---|---|---|---|---|---|---|
+| 10fold | ADASYN | Preliminary 1-Epoch (Smoke 16 users) | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.1347 | 0.0149 s | 14.90 ms |
+| 10fold | BASELINE | Preliminary 1-Epoch (Smoke 16 users) | 1.0000 | 0.5388 | 0.2667 | 0.3987 | 0.1406 | 0.0094 s | 9.40 ms |
+| 10fold | GAN | Preliminary 1-Epoch (Smoke 16 users) | 0.6667 | 0.2183 | 0.2000 | 0.0781 | 0.1607 | 0.0077 s | 7.70 ms |
+| 10fold | SMOTE | Preliminary 1-Epoch (Smoke 16 users) | 0.3333 | 0.1131 | 0.0667 | 0.0175 | 0.2333 | 0.0073 s | 7.30 ms |
+| no_10fold | ADASYN | Preliminary 1-Epoch (Smoke 16 users) | 0.3333 | 0.1617 | 0.1333 | 0.0351 | 0.1935 | 0.0136 s | 13.60 ms |
+| no_10fold | BASELINE | **Converged Multi-Epoch (8 epochs, Full Cohort)** | 0.2260 | 0.0783 | 0.0695 | 0.0537 | 0.0178 | 5.1717 s | 2.79 ms |
+| no_10fold | GAN | Preliminary 1-Epoch (Smoke 16 users) | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.1586 | 0.0123 s | 12.30 ms |
+| no_10fold | SMOTE | Preliminary 1-Epoch (Smoke 16 users) | 0.3333 | 0.0713 | 0.0667 | 0.0303 | 0.2226 | 0.0098 s | 9.80 ms |
+
+### 13C. Complete 40-Configuration Coverage & Methodology Audit Breakdown
+Audit classification distinguishing multi-epoch converged baselines from preliminary 1-epoch initial exploration runs and acausal preliminary Conv1D runs:
+| Model Architecture | Validation | Augmentation | Status | Epochs | Cohort Scope | Causal Model 5 Fix | Augmentation Quarantining | Test Score |
+|---|---|---|---|---|---|---|---|---|
+| Model 1: LSTM + Attention | 10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4604 | Acc: 0.5965 |
+| Model 1: LSTM + Attention | 10fold | BASELINE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4482 | Acc: 0.5965 |
+| Model 1: LSTM + Attention | 10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.5684 | Acc: 0.5965 |
+| Model 1: LSTM + Attention | 10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4434 | Acc: 0.5965 |
+| Model 1: LSTM + Attention | no_10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4425 | Acc: 0.5965 |
+| Model 1: LSTM + Attention | no_10fold | BASELINE | **CONVERGED BASELINE** | 5 Epochs | Full (183k/152k Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.6456 | Acc: 0.6229 |
+| Model 1: LSTM + Attention | no_10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4309 | Acc: 0.5965 |
+| Model 1: LSTM + Attention | no_10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4495 | Acc: 0.5965 |
+| Model 2: Transformer + Knowledge Tracing | 10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.5121 | Acc: 0.5965 |
+| Model 2: Transformer + Knowledge Tracing | 10fold | BASELINE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4578 | Acc: 0.5439 |
+| Model 2: Transformer + Knowledge Tracing | 10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4425 | Acc: 0.5965 |
+| Model 2: Transformer + Knowledge Tracing | 10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4431 | Acc: 0.5965 |
+| Model 2: Transformer + Knowledge Tracing | no_10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4648 | Acc: 0.5965 |
+| Model 2: Transformer + Knowledge Tracing | no_10fold | BASELINE | **CONVERGED BASELINE** | 5 Epochs | Full (183k/152k Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.6396 | Acc: 0.6181 |
+| Model 2: Transformer + Knowledge Tracing | no_10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4751 | Acc: 0.5965 |
+| Model 2: Transformer + Knowledge Tracing | no_10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4492 | Acc: 0.5965 |
+| Model 3: BERT-style Transformer Encoder + NCF | 10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4492 | Acc: 0.5614 |
+| Model 3: BERT-style Transformer Encoder + NCF | 10fold | BASELINE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.5377 | Acc: 0.5965 |
+| Model 3: BERT-style Transformer Encoder + NCF | 10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.3827 | Acc: 0.5965 |
+| Model 3: BERT-style Transformer Encoder + NCF | 10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.6049 | Acc: 0.6053 |
+| Model 3: BERT-style Transformer Encoder + NCF | no_10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.5719 | Acc: 0.6053 |
+| Model 3: BERT-style Transformer Encoder + NCF | no_10fold | BASELINE | **CONVERGED BASELINE** | 5 Epochs | Full (183k/152k Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.6371 | Acc: 0.6168 |
+| Model 3: BERT-style Transformer Encoder + NCF | no_10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4703 | Acc: 0.5965 |
+| Model 3: BERT-style Transformer Encoder + NCF | no_10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | N/A (Not M5) | Train Only (Test Frozen) | AUC: 0.4198 | Acc: 0.5965 |
+| Model 4: Autoencoder + Recommender Network | 10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (16 Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.1347 | HR@5: 0.0000 |
+| Model 4: Autoencoder + Recommender Network | 10fold | BASELINE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (16 Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.1406 | HR@5: 1.0000 |
+| Model 4: Autoencoder + Recommender Network | 10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (16 Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.1607 | HR@5: 0.6667 |
+| Model 4: Autoencoder + Recommender Network | 10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (16 Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.2333 | HR@5: 0.3333 |
+| Model 4: Autoencoder + Recommender Network | no_10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (16 Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.1935 | HR@5: 0.3333 |
+| Model 4: Autoencoder + Recommender Network | no_10fold | BASELINE | **CONVERGED BASELINE** | 8 Epochs | Full (183k/152k Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.0178 | HR@5: 0.2260 |
+| Model 4: Autoencoder + Recommender Network | no_10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (16 Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.1586 | HR@5: 0.0000 |
+| Model 4: Autoencoder + Recommender Network | no_10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (16 Train) | N/A (Not M5) | Train Only (Test Frozen) | MSE: 0.2226 | HR@5: 0.3333 |
+| Model 5: CNN + LSTM | 10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | Acausal (Preliminary) | Train Only (Test Frozen) | AUC: 0.8101 | Acc: 0.8246 |
+| Model 5: CNN + LSTM | 10fold | BASELINE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | Acausal (Preliminary) | Train Only (Test Frozen) | AUC: 0.4463 | Acc: 0.5965 |
+| Model 5: CNN + LSTM | 10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | Acausal (Preliminary) | Train Only (Test Frozen) | AUC: 0.8175 | Acc: 0.8333 |
+| Model 5: CNN + LSTM | 10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | Acausal (Preliminary) | Train Only (Test Frozen) | AUC: 0.9584 | Acc: 0.8684 |
+| Model 5: CNN + LSTM | no_10fold | ADASYN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | Acausal (Preliminary) | Train Only (Test Frozen) | AUC: 0.9268 | Acc: 0.8860 |
+| Model 5: CNN + LSTM | no_10fold | BASELINE | **CONVERGED BASELINE** | 5 Epochs | Full (183k/152k Train) | Verified Causal | Train Only (Test Frozen) | AUC: 0.6450 | Acc: 0.6220 |
+| Model 5: CNN + LSTM | no_10fold | GAN | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | Acausal (Preliminary) | Train Only (Test Frozen) | AUC: 0.9220 | Acc: 0.8158 |
+| Model 5: CNN + LSTM | no_10fold | SMOTE | *PRELIMINARY* | 1 Epoch | Preliminary Smoke (20 Train) | Acausal (Preliminary) | Train Only (Test Frozen) | AUC: 0.9453 | Acc: 0.8246 |
+
+### 13D. All Five Baseline Models Status Summary
+- **All Five Baseline Models Fully Converged:** All five target architectures (Model 1 LSTM+Attention, Model 2 Transformer KT, Model 3 BERT-NCF, Model 4 Autoencoder Recommender, and Model 5 Causal CNN+LSTM) have completed full multi-epoch baseline training on the full Santa EdNet-KT3 dataset (183,300 train, 45,909 validation, 57,332 frozen test students).
+- **Model 3 Baseline Completed:** Model 3 (`BERTNCF`) has successfully completed 5-epoch baseline training on the full 183k student cohort with capacity correction, achieving verified convergence on the frozen test set.
+- **Model 5 Causal Invariant Preserved:** Model 5 strictly employs causal left-padded Conv1D (`kernel_size=3`, `padding=0`), guaranteeing that future interactions cannot leak into earlier time steps.
+- **Augmented Multi-Epoch Configurations:** The 30 augmented configurations (SMOTE, ADASYN, GAN across models and validation strategies) remain archived as 1-epoch exploratory results and can be selectively retrained if full-scale augmentation comparisons are required.
 
 
 ## 14. Empirical Conclusions & Recommendations

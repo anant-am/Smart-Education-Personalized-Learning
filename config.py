@@ -36,7 +36,11 @@ _env_contents = os.environ.get("EDNET_CONTENTS_ROOT", os.environ.get("EDNET_CONT
 if _env_contents:
     EDNET_CONTENTS_DIR = Path(_env_contents)
 else:
-    if (PROJECT_ROOT / "data" / "contents").exists():
+    if (PROJECT_ROOT / "Contents" / "EdNet-Contents" / "contents").exists():
+        EDNET_CONTENTS_DIR = PROJECT_ROOT / "Contents" / "EdNet-Contents" / "contents"
+    elif (PROJECT_ROOT / "Contents" / "contents").exists():
+        EDNET_CONTENTS_DIR = PROJECT_ROOT / "Contents" / "contents"
+    elif (PROJECT_ROOT / "data" / "contents").exists():
         EDNET_CONTENTS_DIR = PROJECT_ROOT / "data" / "contents"
     elif (PROJECT_ROOT.parent / "EdNet-Contents" / "contents").exists():
         EDNET_CONTENTS_DIR = PROJECT_ROOT.parent / "EdNet-Contents" / "contents"
@@ -51,7 +55,11 @@ _env_full = os.environ.get("EDNET_KT3_ROOT", os.environ.get("EDNET_KT3_FULL_DIR"
 if _env_full:
     EDNET_KT3_FULL_DIR = Path(_env_full)
 else:
-    if (PROJECT_ROOT / "data" / "KT3").exists():
+    if (PROJECT_ROOT / "KT-3" / "EdNet-KT3" / "KT3").exists():
+        EDNET_KT3_FULL_DIR = PROJECT_ROOT / "KT-3" / "EdNet-KT3" / "KT3"
+    elif (PROJECT_ROOT / "KT-3" / "KT3").exists():
+        EDNET_KT3_FULL_DIR = PROJECT_ROOT / "KT-3" / "KT3"
+    elif (PROJECT_ROOT / "data" / "KT3").exists():
         EDNET_KT3_FULL_DIR = PROJECT_ROOT / "data" / "KT3"
     elif (PROJECT_ROOT.parent / "EdNet-KT3" / "KT3").exists():
         EDNET_KT3_FULL_DIR = PROJECT_ROOT.parent / "EdNet-KT3" / "KT3"
