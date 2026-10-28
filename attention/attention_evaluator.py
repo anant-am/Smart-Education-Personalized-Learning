@@ -27,7 +27,10 @@ from sklearn.metrics import (
     accuracy_score, precision_score, recall_score,
     f1_score, roc_auc_score, confusion_matrix, classification_report
 )
-from imblearn.over_sampling import SMOTE
+try:
+    from imblearn.over_sampling import SMOTE
+except ImportError:
+    SMOTE = None
 
 import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -107,6 +110,11 @@ class AttentionEvaluator:
             X_tr_concat = np.hstack([f_xv_tr_scaled, f_xa_tr_scaled])
             train_pre_count = len(f_y_tr)
 
+            if SMOTE is None:
+                raise ImportError(
+                    "imblearn is required for SMOTE oversampling in AttentionEvaluator. "
+                    "Please install imbalanced-learn: pip install imbalanced-learn"
+                )
             smote = SMOTE(random_state=self.config.random_seed + fold_idx, k_neighbors=3)
             X_tr_resampled, y_tr_resampled = smote.fit_resample(X_tr_concat, f_y_tr)
             train_post_count = len(y_tr_resampled)
@@ -222,6 +230,11 @@ class AttentionEvaluator:
 
         # Apply SMOTE to training partition exclusively
         concat_tr = np.hstack([xv_tr, xa_tr])
+        if SMOTE is None:
+            raise ImportError(
+                "imblearn is required for SMOTE oversampling in AttentionEvaluator. "
+                "Please install imbalanced-learn: pip install imbalanced-learn"
+            )
         smote = SMOTE(random_state=self.config.random_seed, k_neighbors=3)
         concat_tr_res, y_tr_res = smote.fit_resample(concat_tr, y_tr)
 

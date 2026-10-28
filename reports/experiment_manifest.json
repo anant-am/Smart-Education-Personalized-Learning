@@ -5,6 +5,73 @@
   "gpu_name": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
   "gpu_vram_gb": 5.99951171875,
   "completed_configurations": 40,
+  "cohort_statistics": {
+    "development_cohort_name": "KT-3 (1000) Dev Cohort",
+    "development_users": 998,
+    "development_events": 532594,
+    "final_test_cohort_name": "KT-3 (250) Test Cohort",
+    "final_test_users": 249,
+    "final_test_events": 174608,
+    "total_students": 1247,
+    "total_events": 707202,
+    "cross_cohort_user_overlap": 0,
+    "leakage_verification_status": "ZERO_LEAKAGE_VERIFIED"
+  },
+  "models_summary": {
+    "model1": {
+      "name": "Model 1: LSTM + Attention KT",
+      "architecture": "LSTM + Attention",
+      "parameters": 803201,
+      "test_auc": 0.5760,
+      "test_acc": 0.6584,
+      "precision": 0.6689,
+      "recall": 0.9542,
+      "f1": 0.7865
+    },
+    "model2": {
+      "name": "Model 2: Transformer KT",
+      "architecture": "Transformer + KT (SAKT/SAINT)",
+      "parameters": 824385,
+      "test_auc": 0.5786,
+      "test_acc": 0.6587,
+      "precision": 0.6607,
+      "recall": 0.9915,
+      "f1": 0.7930
+    },
+    "model3": {
+      "name": "Model 3: BERT-style Transformer + NCF",
+      "architecture": "BERT + NCF",
+      "parameters": 1572737,
+      "test_auc": 0.5442,
+      "test_acc": 0.6594,
+      "precision": 0.6598,
+      "recall": 0.9978,
+      "f1": 0.7943
+    },
+    "model4": {
+      "name": "Model 4: Autoencoder Recommender",
+      "architecture": "Autoencoder Recommender",
+      "parameters": 103368,
+      "reconstruction_mse": 0.1095,
+      "hit_rate_at_5": 0.4730,
+      "hit_rate_at_10": 0.6556,
+      "ndcg_at_5": 0.1571,
+      "precision_at_5": 0.1809,
+      "recall_at_5": 0.0084
+    },
+    "model5": {
+      "name": "Model 5: CNN + LSTM (Causal)",
+      "architecture": "CNN + LSTM (Causal)",
+      "parameters": 153601,
+      "test_auc": 0.5284,
+      "test_acc": 0.6228,
+      "precision": 0.6601,
+      "recall": 0.8872,
+      "f1": 0.7570,
+      "legacy_unmasked_test_acc": 0.9884,
+      "audit_note": "Legacy 98.84% pre-causal baseline was due to symmetric convolution lookahead; verified causal accuracy is 62.28%."
+    }
+  },
   "results": [
     {
       "run_id": "run_model1_no_10fold_baseline_e004a5",

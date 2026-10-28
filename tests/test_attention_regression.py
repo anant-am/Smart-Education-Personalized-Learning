@@ -32,7 +32,10 @@ import importlib
 from pathlib import Path
 import numpy as np
 import torch
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -119,6 +122,8 @@ class TestSmartEducationRegression(unittest.TestCase):
 
     # ── Test F: New attention dataset loads without leakage ──
     def test_F_attention_datasets_load(self):
+        if not VIDEO_ATTENTION_CSV.exists() or not AUDIO_ATTENTION_CSV.exists():
+            self.skipTest(f"Raw video/audio CSV training datasets not present at {VIDEO_ATTENTION_CSV}")
         prep = AttentionPreprocessor()
         v_df, a_df = prep.load_and_audit_data()
         self.assertEqual(len(v_df), 2000)
@@ -131,6 +136,8 @@ class TestSmartEducationRegression(unittest.TestCase):
 
     # ── Test G: Attention preprocessing & scaling work ──
     def test_G_attention_preprocessing(self):
+        if not VIDEO_ATTENTION_CSV.exists() or not AUDIO_ATTENTION_CSV.exists():
+            self.skipTest("Raw video/audio CSV training datasets not present")
         prep = AttentionPreprocessor()
         v_df, a_df = prep.load_and_audit_data()
         split = prep.split_data_programmatically(v_df, a_df, test_size=0.20)
@@ -152,6 +159,10 @@ class TestSmartEducationRegression(unittest.TestCase):
 
     # ── Test I: 10-Fold CV execution logic ──
     def test_I_cross_validation_logic(self):
+        try:
+            import imblearn
+        except ImportError:
+            self.skipTest("imblearn is required for 10-fold CV logic test")
         from attention.attention_evaluator import AttentionEvaluator
         evaluator = AttentionEvaluator(device=self.device)
         # Smoke test on small partition
@@ -164,7 +175,10 @@ class TestSmartEducationRegression(unittest.TestCase):
 
     # ── Test J: Training-only SMOTE oversampling ──
     def test_J_training_only_smote(self):
-        from imblearn.over_sampling import SMOTE
+        try:
+            from imblearn.over_sampling import SMOTE
+        except ImportError:
+            self.skipTest("imblearn is required for training-only SMOTE test")
         X = np.random.randn(100, 20)
         y = np.array([0] * 70 + [1] * 20 + [2] * 10)
         smote = SMOTE(k_neighbors=2, random_state=42)
@@ -196,6 +210,7 @@ class TestSmartEducationRegression(unittest.TestCase):
         self.assertTrue(prep.is_fitted)
 
     # ── Test N: Real video processing (MP4) ──
+    @unittest.skipIf(cv2 is None, "OpenCV (cv2) not installed")
     def test_N_real_video_processing(self):
         from scripts.run_video_attention import create_synthetic_demo_video
         vid_path = create_synthetic_demo_video(duration_sec=2)
@@ -209,6 +224,7 @@ class TestSmartEducationRegression(unittest.TestCase):
                 os.remove(vid_path)
 
     # ── Test O: Missing audio handling ──
+    @unittest.skipIf(cv2 is None, "OpenCV (cv2) not installed")
     def test_O_missing_audio_handling(self):
         from scripts.run_video_attention import create_synthetic_demo_video
         vid_path = create_synthetic_demo_video(duration_sec=1)
@@ -223,6 +239,7 @@ class TestSmartEducationRegression(unittest.TestCase):
                 os.remove(vid_path)
 
     # ── Test P: No-face video handling ──
+    @unittest.skipIf(cv2 is None, "OpenCV (cv2) not installed")
     def test_P_no_face_video_handling(self):
         # Create blank video without faces
         temp_dir = tempfile.gettempdir()

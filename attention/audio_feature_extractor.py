@@ -26,7 +26,10 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import numpy as np
-import soundfile as sf
+try:
+    import soundfile as sf
+except ImportError:
+    sf = None
 from scipy.signal import find_peaks
 
 import sys
@@ -60,6 +63,12 @@ class AudioFeatureExtractor:
         """
         Extracts audio from video and computes the 10-D acoustic feature vector.
         """
+        if sf is None:
+            return self._fallback_result(
+                "SoundFile is not installed",
+                warnings=["Raw audio waveform decoding requires soundfile package."]
+            )
+
         v_path = Path(video_path)
         warnings = []
 
@@ -214,9 +223,13 @@ class AudioFeatureExtractor:
 
         feature_vector = np.array([feature_dict[k] for k in AUDIO_FEATURE_NAMES], dtype=np.float32)
 
+        audio_is_available = bool(speech_presence == 1 or overall_rms > 1e-3)
+        if not audio_is_available:
+            warnings.append("Audio track does not contain detectable vocal speech activity.")
+
         return {
-            "status": "Success",
-            "audio_available": speech_presence == 1 or overall_rms > 1e-3,
+            "status": "Success" if audio_is_available else "Silent/No-Speech Audio Track",
+            "audio_available": audio_is_available,
             "features": feature_dict,
             "feature_vector": feature_vector,
             "warnings": warnings,
@@ -225,25 +238,13 @@ class AudioFeatureExtractor:
         }
 
     def _fallback_result(self, status: str, warnings: List[str]) -> Dict[str, Any]:
-        """Provides safe neutral fallback vector when audio cannot be extracted."""
-        # Mean defaults from training data
-        fallback_dict = {
-            "Speech_Presence": 0.0,
-            "Voice_Energy": 0.51,
-            "Speech_Clarity": 0.50,
-            "Background_Noise_Level": 0.50,
-            "Speaking_Rate": 138.60,
-            "Pause_Frequency": 4.95,
-            "Response_Delay": 2.50,
-            "Interaction_Frequency": 9.94,
-            "Audio_Engagement_Score": 0.49,
-            "Listening_Consistency": 0.50
-        }
+        """Provides zeroed vector when audio cannot be extracted, without fabricating measurements."""
+        fallback_dict = {k: 0.0 for k in AUDIO_FEATURE_NAMES}
         return {
             "status": status,
             "audio_available": False,
             "features": fallback_dict,
-            "feature_vector": np.array([fallback_dict[k] for k in AUDIO_FEATURE_NAMES], dtype=np.float32),
+            "feature_vector": np.zeros(len(AUDIO_FEATURE_NAMES), dtype=np.float32),
             "warnings": warnings,
             "duration_sec": 0.0,
             "sample_rate": self.target_sample_rate

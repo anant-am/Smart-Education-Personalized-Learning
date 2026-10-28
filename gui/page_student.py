@@ -133,25 +133,27 @@ def render(engine):
     
     with tab1:
         st.header("Student ID Lookup")
-        
+        st.caption("Search across authentic student interaction sequences in the EdNet-KT3 dataset.")
+
+        quick_students = ["u1165 (Unseen Test Student)", "u1 (Dev Train Student)", "u2 (Dev Train Student)", "u100 (Dev Train Student)", "u502 (Dev Train Student)", "Custom Student ID"]
+        selected_option = st.selectbox("Verified Cohort Learners:", options=quick_students, index=0)
+
         col1, col2 = st.columns(2)
         with col1:
-            student_id = st.text_input("Student ID", placeholder="e.g., u1165")
+            default_id = "" if selected_option == "Custom Student ID" else selected_option.split(" ")[0]
+            student_id = st.text_input("Student ID", value=default_id, placeholder="e.g., u1165")
         with col2:
             split = st.selectbox("Split", options=["test", "train", "val"])
-            
+
         if st.button("Run Inference", key="run_inf_lookup"):
             if student_id:
                 with st.spinner("Running inference..."):
-                    # Note: predict_student currently might not take 'split' depending on the interface,
-                    # but if it does, we pass it, otherwise assume it uses the best available data.
-                    # As per instructions, it's called as `predict_student(engine, student_id)`
                     result = predict_student(engine, student_id)
                     if result:
                         st.session_state['last_prediction'] = result
                         render_prediction_results(result)
                     else:
-                        st.error(f"Could not find data for student: {student_id} or inference failed.")
+                        st.error(f"Student '{student_id}' does not exist in any dataset split.")
             else:
                 st.warning("Please enter a Student ID.")
                 

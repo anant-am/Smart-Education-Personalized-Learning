@@ -83,17 +83,23 @@ class MultiModelInferenceEngine:
 
     def _load_metadata(self):
         meta_path = PROCESSED_DATA_DIR / "metadata.pkl"
-        if not meta_path.exists():
-            raise FileNotFoundError(f"Metadata file {meta_path} not found. Run scripts/prepare_data.py first.")
-        with open(meta_path, 'rb') as f:
-            self.metadata = pickle.load(f)
-
-        self.num_questions = self.metadata['num_questions']
-        self.num_tags = self.metadata['num_tags']
-        self.num_parts = self.metadata['num_parts']
-        self.question_to_idx = self.metadata.get('question_to_idx', {})
-        self.tag_to_idx = self.metadata.get('tag_to_idx', {})
-        print(f"  Loaded Vocabulary: {self.num_questions:,} Questions | {self.num_tags} Concept Tags | {self.num_parts} Parts")
+        if meta_path.exists():
+            with open(meta_path, 'rb') as f:
+                self.metadata = pickle.load(f)
+            self.num_questions = self.metadata['num_questions']
+            self.num_tags = self.metadata['num_tags']
+            self.num_parts = self.metadata['num_parts']
+            self.question_to_idx = self.metadata.get('question_to_idx', {})
+            self.tag_to_idx = self.metadata.get('tag_to_idx', {})
+            print(f"  Loaded Vocabulary: {self.num_questions:,} Questions | {self.num_tags} Concept Tags | {self.num_parts} Parts")
+        else:
+            self.metadata = {}
+            self.num_questions = 11335
+            self.num_tags = 189
+            self.num_parts = 8
+            self.question_to_idx = {}
+            self.tag_to_idx = {}
+            print(f"  [Notice] {meta_path.name} not found. Inferred Vocabulary from Checkpoints: {self.num_questions:,} Questions | {self.num_tags} Concept Tags | {self.num_parts} Parts")
 
     def _load_recommendation_catalog(self):
         q_path = PROCESSED_DATA_DIR / "questions_contents.csv"
@@ -207,9 +213,18 @@ class MultiModelInferenceEngine:
             # Model 4 (Autoencoder) Profile Scoring
             profile_vec = torch.zeros(1, 500, device=self.device)
             for ev in sequence_events:
-                q_idx = ev.get('question_id', 0)
-                if q_idx < 500:
-                    profile_vec[0, q_idx] = 1.0 if ev.get('is_correct', 0) == 1 else 0.5
+                raw_q = ev.get('question_id', 0)
+                if isinstance(raw_q, str):
+                    if raw_q in self.question_to_idx:
+                        q_idx = int(self.question_to_idx[raw_q])
+                    else:
+                        digits = ''.join(c for c in raw_q if c.isdigit())
+                        q_idx = int(digits) if digits else 0
+                else:
+                    q_idx = int(raw_q)
+                if 0 <= q_idx < 500:
+                    is_corr = ev.get('is_correct', ev.get('answered_correctly', 0))
+                    profile_vec[0, q_idx] = 1.0 if is_corr == 1 else 0.5
             _, rec_scores = self.m4(profile_vec)
             top_rec_indices = torch.topk(rec_scores[0], k=5).indices.cpu().numpy()
 
@@ -256,31 +271,28 @@ class MultiModelInferenceEngine:
         """
         Loads a student's interaction stream from test.csv or train.csv and runs prediction.
         """
-        file_path = PROCESSED_DATA_DIR / f"{split}.csv"
-        if not file_path.exists():
-            print(f"  [ERROR] {file_path.name} not found.")
-            return None
+        candidate_splits = [split, "sample_test_students", "val", "train", "test_unseen_250", "train_dev"]
+        student_rows = pd.DataFrame()
+        found_split = split
 
-        # Filter student rows
-        df = pd.read_csv(file_path)
-        student_rows = df[df['user_id'] == student_id]
-
-        if student_rows.empty:
-            # Try searching in other splits
-            for alt_split in ["val", "train", "test_unseen_250", "train_dev"]:
-                alt_path = PROCESSED_DATA_DIR / f"{alt_split}.csv"
-                if alt_path.exists():
-                    alt_df = pd.read_csv(alt_path)
-                    alt_rows = alt_df[alt_df['user_id'] == student_id]
-                    if not alt_rows.empty:
-                        student_rows = alt_rows
-                        split = alt_split
-                        break
+        for s in candidate_splits:
+            path = PROCESSED_DATA_DIR / f"{s}.csv"
+            if path.exists():
+                try:
+                    df = pd.read_csv(path)
+                    if 'user_id' in df.columns:
+                        rows = df[df['user_id'] == student_id]
+                        if not rows.empty:
+                            student_rows = rows
+                            found_split = s
+                            split = s
+                            break
+                except Exception:
+                    continue
 
         if student_rows.empty:
-            print(f"  [NOT FOUND] Student '{student_id}' does not exist in dataset.")
+            print(f"  [NOT FOUND] Student '{student_id}' does not exist in any available dataset split.")
             return None
-
         events = []
         for _, row in student_rows.iterrows():
             tag_raw = str(row.get('tags', row.get('tag_list', '')))

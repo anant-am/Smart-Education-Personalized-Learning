@@ -9,7 +9,7 @@ Executes the full university-mandated academic lifecycle for Model 1:
 5. Quantitative Overfitting/Underfitting Diagnosis with empirical evidence.
 6. Correction Technique Application (Regularization Tuning).
 7. Independent Retraining with fresh ModelTrainer and fresh optimizer.
-8. Final Untouched Test Evaluation on 250 unseen students.
+8. Final Untouched Test Evaluation on unseen students.
 9. Dual Knowledge State Estimation (Model-Derived vs. Historical Baseline), Gap Detection, and Recommendation.
 10. Generates reports/model1_report.md and reports/model1_results.json.
 """

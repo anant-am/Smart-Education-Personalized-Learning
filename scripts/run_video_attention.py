@@ -13,24 +13,32 @@ import argparse
 import tempfile
 from pathlib import Path
 import numpy as np
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from attention.attention_evaluator import AttentionEvaluator
 from attention.attention_pipeline import run_video_attention_pipeline
 from attention.attention_inference import AttentionInferenceEngine
 
 
-def create_synthetic_demo_video(duration_sec: int = 4, fps: int = 25) -> str:
-    """Creates a temporary synthetic video with a rendered face for testing."""
+def create_synthetic_demo_video(duration_sec: int = 4, fps: int = 25, include_audio: bool = True) -> str:
+    """Creates a temporary synthetic video with a rendered face and optional audio for testing."""
+    if cv2 is None:
+        raise ImportError(
+            "OpenCV (cv2) is required to render synthetic demonstration videos. "
+            "Please install opencv-python or opencv-python-headless."
+        )
     temp_dir = tempfile.gettempdir()
-    temp_path = os.path.join(temp_dir, "smart_education_attention_demo.mp4")
+    silent_path = os.path.join(temp_dir, "smart_education_attention_demo_silent.mp4")
+    final_path = os.path.join(temp_dir, "smart_education_attention_demo.mp4")
 
     width, height = 640, 480
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(temp_path, fourcc, fps, (width, height))
+    out = cv2.VideoWriter(silent_path, fourcc, fps, (width, height))
 
     total_frames = duration_sec * fps
 
@@ -42,7 +50,7 @@ def create_synthetic_demo_video(duration_sec: int = 4, fps: int = 25) -> str:
         center = (width // 2, height // 2)
         cv2.circle(frame, center, 100, (180, 200, 230), -1)  # Skin tone
 
-        # Eyes (blinking every 30 frames)
+        # Eyes (blinking every 35 frames)
         is_blink = (i % 35) in [0, 1]
         eye_y = height // 2 - 25
         if not is_blink:
@@ -62,7 +70,53 @@ def create_synthetic_demo_video(duration_sec: int = 4, fps: int = 25) -> str:
         out.write(frame)
 
     out.release()
-    return temp_path
+
+    # Mux synthetic speech audio track if audio libraries are available
+    if include_audio:
+        try:
+            import soundfile as sf
+            import imageio_ffmpeg
+            import subprocess
+
+            sample_rate = 16000
+            t = np.linspace(0, duration_sec, int(sample_rate * duration_sec), endpoint=False, dtype=np.float32)
+            harmonics = 0.5 * np.sin(2 * np.pi * 500 * t) + 0.3 * np.sin(2 * np.pi * 1500 * t) + 0.1 * np.sin(2 * np.pi * 2500 * t)
+            envelope = np.clip(np.sin(2 * np.pi * 3 * t), 0, 1) ** 2
+            audio_signal = (harmonics * envelope * 0.4).astype(np.float32)
+
+            wav_temp = os.path.join(temp_dir, "temp_demo_speech.wav")
+            sf.write(wav_temp, audio_signal, sample_rate)
+
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+            cmd = [
+                ffmpeg_exe, "-y",
+                "-i", silent_path,
+                "-i", wav_temp,
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-shortest",
+                final_path
+            ]
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+
+            if os.path.exists(wav_temp):
+                os.remove(wav_temp)
+            if os.path.exists(silent_path):
+                os.remove(silent_path)
+            return final_path
+        except Exception:
+            # Fallback to silent video if muxing fails
+            if os.path.exists(silent_path):
+                if os.path.exists(final_path):
+                    os.remove(final_path)
+                os.rename(silent_path, final_path)
+            return final_path
+
+    if os.path.exists(silent_path):
+        if os.path.exists(final_path):
+            os.remove(final_path)
+        os.rename(silent_path, final_path)
+    return final_path
 
 
 def main():
@@ -74,6 +128,7 @@ def main():
     args = parser.parse_args()
 
     if args.train:
+        from attention.attention_evaluator import AttentionEvaluator
         evaluator = AttentionEvaluator()
         evaluator.run_full_lifecycle()
         return

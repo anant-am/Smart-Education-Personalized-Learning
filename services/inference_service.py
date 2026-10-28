@@ -24,7 +24,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from config import (
     PROCESSED_DATA_DIR, CHECKPOINTS_DIR, REPORTS_DIR, PLOTS_DIR,
-    MODELS_DIR, PROJECT_ROOT as CFG_ROOT
+    FIGURES_DIR, MODELS_DIR, PROJECT_ROOT as CFG_ROOT
 )
 
 
@@ -45,90 +45,23 @@ def get_inference_engine():
     return engine
 
 
-@st.cache_data(ttl=3600)
-def get_experiment_manifest() -> Dict[str, Any]:
-    """Loads the experiment manifest JSON."""
-    path = REPORTS_DIR / "experiment_manifest.json"
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
-
-
-@st.cache_data(ttl=3600)
-def get_model_results(model_num: int) -> Dict[str, Any]:
-    """Loads model training results JSON for a specific model."""
-    path = REPORTS_DIR / f"model{model_num}_results.json"
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
-
-
-@st.cache_data(ttl=3600)
-def get_all_model_results() -> Dict[int, Dict[str, Any]]:
-    """Loads results for all 5 models."""
-    results = {}
-    for i in range(1, 6):
-        r = get_model_results(i)
-        if r:
-            results[i] = r
-    return results
-
-
-@st.cache_data(ttl=3600)
-def get_checkpoint_metadata() -> Dict[str, Dict[str, Any]]:
-    """Loads _meta.json files for all checkpoints."""
-    meta = {}
-    for f in CHECKPOINTS_DIR.rglob("*_meta.json"):
-        with open(f, 'r', encoding='utf-8') as fh:
-            meta[f.stem.replace('_meta', '')] = json.load(fh)
-    return meta
-
-
-@st.cache_data(ttl=3600)
-def get_checkpoint_files() -> List[Dict[str, Any]]:
-    """Lists all checkpoint files with size and modification time."""
-    files = []
-    for f in sorted(CHECKPOINTS_DIR.rglob("*")):
-        if f.is_file():
-            stat = f.stat()
-            rel_name = f.relative_to(CHECKPOINTS_DIR)
-            files.append({
-                'name': str(rel_name),
-                'size_mb': round(stat.st_size / (1024 * 1024), 2),
-                'modified': time.strftime('%Y-%m-%d %H:%M', time.localtime(stat.st_mtime)),
-                'extension': f.suffix
-            })
-    return files
-
-
-@st.cache_data(ttl=3600)
-def get_attention_results() -> Dict[str, Any]:
-    """Loads multimodal attention training and evaluation results JSON."""
-    path = REPORTS_DIR / "attention_results.json"
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
-
-
-@st.cache_data(ttl=3600)
-def get_augmentation_comparison() -> Optional[pd.DataFrame]:
-    """Loads augmentation comparison CSV."""
-    path = REPORTS_DIR / "augmentation_comparison.csv"
-    if path.exists():
-        return pd.read_csv(path)
-    return None
-
-
-@st.cache_data(ttl=3600)
-def get_five_model_comparison() -> Optional[pd.DataFrame]:
-    """Loads the 5-model comparison CSV."""
-    path = REPORTS_DIR / "five_model_comparison.csv"
-    if path.exists():
-        return pd.read_csv(path)
-    return None
+# Re-export experiment and benchmark loaders from dedicated experiment_service
+from services.experiment_service import (
+    get_experiment_manifest,
+    get_model_results,
+    get_all_model_results,
+    get_checkpoint_metadata,
+    get_checkpoint_files,
+    get_attention_results,
+    get_augmentation_comparison,
+    get_five_model_comparison,
+    get_experiment_results_df,
+    get_final_comparison,
+    get_figure_path,
+    get_available_figures,
+    get_plot_path,
+    get_available_plots,
+)
 
 
 @st.cache_data(ttl=3600)
@@ -206,17 +139,7 @@ def get_dataset_user_counts() -> Dict[str, int]:
     return counts
 
 
-def get_plot_path(filename: str) -> Optional[Path]:
-    """Returns the path to a plot file if it exists."""
-    path = PLOTS_DIR / filename
-    return path if path.exists() else None
 
-
-def get_available_plots() -> List[str]:
-    """Lists all available plot PNG files."""
-    if PLOTS_DIR.exists():
-        return sorted([f.name for f in PLOTS_DIR.glob("*.png")])
-    return []
 
 
 def predict_student(engine, student_id: str) -> Dict[str, Any]:

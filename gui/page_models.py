@@ -52,13 +52,19 @@ def render(engine):
                     st.markdown("### Diagnosis & Correction")
                     diagnosis = result.get('diagnosis', {})
                     if diagnosis:
-                        st.json(diagnosis)
+                        if isinstance(diagnosis, (dict, list)):
+                            st.json(diagnosis)
+                        else:
+                            st.info(f"**Diagnosis:** {diagnosis}")
                     else:
                         st.info("No diagnosis available.")
                         
                     correction = result.get('correction_info', {})
                     if correction:
-                        st.json(correction)
+                        if isinstance(correction, (dict, list)):
+                            st.json(correction)
+                        else:
+                            st.info(f"**Correction Applied:** {correction}")
                     else:
                         st.info("No correction info available.")
                 

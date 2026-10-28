@@ -1,0 +1,24 @@
+# Smart Education Project — Full Training & Offline Preprocessing Dependencies
+# ==============================================================================
+# Dependencies required only for offline full-dataset preprocessing,
+# model retraining, cross-validation, and synthetic augmentation.
+#
+# Install: pip install -r requirements-training.txt
+
+-r requirements-inference.txt
+
+# Offline Data Augmentation & Imbalanced Learning
+imbalanced-learn>=0.11
+
+# Diagnostic Plotting & Figure Generation
+matplotlib>=3.7
+seaborn>=0.12
+
+# Raw Media Dataset Extraction
+opencv-python-headless>=4.8,<5.0
+soundfile>=0.12
+imageio-ffmpeg>=0.5
+
+# Training Progress & Testing
+tqdm>=4.65
+pytest>=7.4

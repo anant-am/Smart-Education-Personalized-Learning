@@ -77,7 +77,7 @@ def adjust_recommendations_by_attention(
         priority_order = {"explanation": 1, "question": 2, "lecture": 3}
         adapted = sorted(original_recommendations, key=lambda r: priority_order.get(r.get("type", "resource"), 9))
 
-    else:  # Attentive
+    elif attention_class == "Attentive":
         strategy_title = "Accelerated Mastery (Active Practice & Deep-Dive Exploration)"
         rationale = (
             f"Learner is Attentive (Confidence: {confidence*100:.1f}%). "
@@ -86,6 +86,15 @@ def adjust_recommendations_by_attention(
         )
         priority_order = {"question": 1, "lecture": 2, "explanation": 3}
         adapted = sorted(original_recommendations, key=lambda r: priority_order.get(r.get("type", "resource"), 9))
+
+    else:
+        # Extraction failed or attention state unobserved
+        strategy_title = "Standard Mastery Remediation (Attention State Unobserved)"
+        rationale = (
+            "Valid attention telemetry could not be extracted from the media stream. "
+            "Delivering authentic EdNet mastery-based recommendations without engagement-paced modulation."
+        )
+        adapted = list(original_recommendations)
 
     return {
         "adapted_recommendations": adapted,
@@ -101,11 +110,15 @@ def run_video_attention_pipeline(
     student_id: Optional[str] = None,
     sequence_events: Optional[List[Dict[str, Any]]] = None,
     attention_engine: Optional[AttentionInferenceEngine] = None,
-    kt_engine: Optional[Any] = None
+    kt_engine: Optional[Any] = None,
+    video_features: Optional[np.ndarray] = None,
+    audio_features: Optional[np.ndarray] = None,
+    video_available: bool = True,
+    audio_available: bool = True
 ) -> Dict[str, Any]:
     """
     Unified master entry point integrating:
-      Video File -> Multimodal Attention -> EdNet Knowledge State -> Adjusted Recommendations
+      Video File / Features -> Multimodal Attention -> EdNet Knowledge State -> Adjusted Recommendations
     """
     t_start = time.time()
     result = {}
@@ -118,17 +131,21 @@ def run_video_attention_pipeline(
             attention_engine = None
             result["attention_error"] = str(e)
 
-    if attention_engine is not None and video_path is not None:
+    if attention_engine is not None and video_features is not None and audio_features is not None:
+        att_res = attention_engine.predict_features(
+            video_features, audio_features, video_available=video_available, audio_available=audio_available
+        )
+    elif attention_engine is not None and video_path is not None:
         att_res = attention_engine.predict_video(video_path)
     else:
         att_res = {
-            "status": "No video provided",
+            "status": "No video or feature vectors provided",
             "attention_class": "Attentive",
             "confidence": 1.0,
             "probabilities": {"Inattentive": 0.0, "Partially Attentive": 0.0, "Attentive": 1.0},
             "video_available": False,
             "audio_available": False,
-            "warnings": ["Video path not specified; using neutral attention context"]
+            "warnings": ["Neither video path nor feature vectors specified; using neutral attention context"]
         }
 
     result["attention"] = att_res
@@ -168,12 +185,14 @@ def run_video_attention_pipeline(
             confidence=att_conf
         )
         result["personalization"] = modulation
+        result["recommendations"] = modulation.get("adapted_recommendations", [])
     else:
         result["student_id"] = None
         result["knowledge_state"] = {}
         result["learning_gaps"] = []
         result["original_recommendations"] = []
         result["personalization"] = None
+        result["recommendations"] = []
 
     result["pipeline_execution_time_ms"] = (time.time() - t_start) * 1000
     return result

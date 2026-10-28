@@ -18,6 +18,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from attention.attention_config import (
     ATTENTION_CHECKPOINTS_DIR,
     ATTENTION_LABEL_MAP,
+    VIDEO_FEATURE_NAMES,
+    AUDIO_FEATURE_NAMES,
     AttentionConfig
 )
 from attention.attention_model import MultimodalAttentionModel
@@ -91,21 +93,29 @@ class AttentionInferenceEngine:
         # Check if both modalities are completely absent/unreadable
         if not v_avail and not a_avail:
             return {
-                "status": "Insufficient visual and acoustic information",
-                "attention_class": "Indeterminate",
+                "status": "Extraction Failure",
+                "error": "Neither visual face cues nor acoustic speech signals could be extracted from the media stream.",
+                "attention_class": "Extraction Failed",
                 "confidence": 0.0,
-                "probabilities": {name: 0.0 for name in ATTENTION_LABEL_MAP.values()},
+                "probabilities": {},
                 "video_available": False,
                 "audio_available": False,
-                "warnings": all_warnings + ["Neither face cues nor audio signals could be extracted"],
+                "warnings": all_warnings + ["Neither face cues nor audio speech could be extracted from the media stream."],
                 "video_features": v_res.get("features", {}),
                 "audio_features": a_res.get("features", {}),
                 "checkpoint": self.active_checkpoint
             }
 
         # Normalize features with frozen development scalers
-        v_scaled = self.preprocessor.transform_single_video_features(v_res["feature_vector"])
-        a_scaled = self.preprocessor.transform_single_audio_features(a_res["feature_vector"])
+        if v_avail:
+            v_scaled = self.preprocessor.transform_single_video_features(v_res["feature_vector"])
+        else:
+            v_scaled = np.zeros(self.config.video_dim, dtype=np.float32)
+
+        if a_avail:
+            a_scaled = self.preprocessor.transform_single_audio_features(a_res["feature_vector"])
+        else:
+            a_scaled = np.zeros(self.config.audio_dim, dtype=np.float32)
 
         t_v = torch.from_numpy(v_scaled).unsqueeze(0).to(self.device)
         t_a = torch.from_numpy(a_scaled).unsqueeze(0).to(self.device)
@@ -114,8 +124,15 @@ class AttentionInferenceEngine:
 
         pred_res = self.model.predict(t_v, t_a, m_v, m_a)
 
+        if v_avail and a_avail:
+            status = "Success (Multimodal: Video + Audio)"
+        elif v_avail:
+            status = "Success (Visual Stream Only - Audio Masked)"
+        else:
+            status = "Success (Acoustic Stream Only - Video Masked)"
+
         return {
-            "status": "Success",
+            "status": status,
             "attention_class": pred_res["attention_class"],
             "class_index": pred_res["class_index"],
             "confidence": pred_res["confidence"],
@@ -139,8 +156,30 @@ class AttentionInferenceEngine:
         """
         Executes prediction on raw (unscaled) 10-D feature vectors.
         """
-        v_scaled = self.preprocessor.transform_single_video_features(video_features)
-        a_scaled = self.preprocessor.transform_single_audio_features(audio_features)
+        if not video_available and not audio_available:
+            return {
+                "status": "Extraction Failure",
+                "error": "Both visual and acoustic streams are marked inactive.",
+                "attention_class": "Extraction Failed",
+                "confidence": 0.0,
+                "probabilities": {},
+                "video_available": False,
+                "audio_available": False,
+                "checkpoint": self.active_checkpoint,
+                "video_features": {k: float(v) for k, v in zip(VIDEO_FEATURE_NAMES, video_features)},
+                "audio_features": {k: float(v) for k, v in zip(AUDIO_FEATURE_NAMES, audio_features)},
+                "warnings": ["Both sensor streams were deactivated."]
+            }
+
+        if video_available:
+            v_scaled = self.preprocessor.transform_single_video_features(video_features)
+        else:
+            v_scaled = np.zeros(self.config.video_dim, dtype=np.float32)
+
+        if audio_available:
+            a_scaled = self.preprocessor.transform_single_audio_features(audio_features)
+        else:
+            a_scaled = np.zeros(self.config.audio_dim, dtype=np.float32)
 
         t_v = torch.from_numpy(v_scaled).unsqueeze(0).to(self.device)
         t_a = torch.from_numpy(a_scaled).unsqueeze(0).to(self.device)
@@ -151,4 +190,7 @@ class AttentionInferenceEngine:
         pred_res["video_available"] = video_available
         pred_res["audio_available"] = audio_available
         pred_res["checkpoint"] = self.active_checkpoint
+        pred_res["video_features"] = {k: float(v) for k, v in zip(VIDEO_FEATURE_NAMES, video_features)}
+        pred_res["audio_features"] = {k: float(v) for k, v in zip(AUDIO_FEATURE_NAMES, audio_features)}
+        pred_res["warnings"] = []
         return pred_res

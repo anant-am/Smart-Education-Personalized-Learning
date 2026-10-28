@@ -55,14 +55,21 @@ def render(engine: Optional[Any] = None) -> None:
     # Executive Overview KPIs
     if models_summary:
         kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
-        m5_auc = models_summary.get("model5", {}).get("test_auc")
-        m5_acc = models_summary.get("model5", {}).get("test_acc")
+        kt_keys = [k for k in ["model1", "model2", "model3", "model5"] if k in models_summary]
+        best_auc_key = max(kt_keys, key=lambda k: models_summary.get(k, {}).get("test_auc", 0)) if kt_keys else "model2"
+        best_acc_key = max(kt_keys, key=lambda k: models_summary.get(k, {}).get("test_acc", 0)) if kt_keys else "model3"
+
+        best_auc_val = models_summary.get(best_auc_key, {}).get("test_auc", 0)
+        best_acc_val = models_summary.get(best_acc_key, {}).get("test_acc", 0)
+        best_auc_name = models_summary.get(best_auc_key, {}).get("name", best_auc_key)
+        best_acc_name = models_summary.get(best_acc_key, {}).get("name", best_acc_key)
+
         m4_hit10 = models_summary.get("model4", {}).get("hit_rate_at_10")
         total_models = len(models_summary)
 
         kpi_col1.metric("Evaluated Models", f"{total_models} Architectures")
-        kpi_col2.metric("Top Test ROC-AUC", f"{m5_auc:.4f}" if m5_auc is not None else "N/A", "Model 5 (CNN+LSTM)")
-        kpi_col3.metric("Top Test Accuracy", f"{m5_acc * 100:.2f}%" if m5_acc is not None else "N/A", "Model 5 (CNN+LSTM)")
+        kpi_col2.metric("Top Test ROC-AUC", f"{best_auc_val:.4f}", best_auc_name)
+        kpi_col3.metric("Top Test Accuracy", f"{best_acc_val * 100:.2f}%", best_acc_name)
         kpi_col4.metric("Recommendation Hit@10", f"{m4_hit10 * 100:.2f}%" if m4_hit10 is not None else "N/A", "Model 4 (Autoencoder)")
 
     st.markdown("---")

@@ -28,12 +28,20 @@ from attention.attention_model import (
 )
 from attention.attention_dataset import AttentionDataset
 from attention.attention_preprocessing import AttentionPreprocessor
-from attention.attention_trainer import AttentionTrainer
-from attention.attention_evaluator import AttentionEvaluator
 from attention.video_feature_extractor import VideoFeatureExtractor
 from attention.audio_feature_extractor import AudioFeatureExtractor
 from attention.attention_inference import AttentionInferenceEngine
 from attention.attention_pipeline import run_video_attention_pipeline
+
+
+def __getattr__(name: str):
+    if name == "AttentionEvaluator":
+        from attention.attention_evaluator import AttentionEvaluator
+        return AttentionEvaluator
+    if name == "AttentionTrainer":
+        from attention.attention_trainer import AttentionTrainer
+        return AttentionTrainer
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 __all__ = [
     "VIDEO_FEATURE_NAMES",

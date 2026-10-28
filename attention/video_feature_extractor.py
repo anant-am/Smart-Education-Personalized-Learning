@@ -24,7 +24,10 @@ Engineered with academic robustness:
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -40,17 +43,29 @@ class VideoFeatureExtractor:
 
     def __init__(self, max_sample_frames: int = 300):
         self.max_sample_frames = max_sample_frames
+        self.face_cascade = None
+        self.eye_cascade = None
 
-        # Load OpenCV Haar cascade classifiers
-        cv_data_path = cv2.data.haarcascades
-        self.face_cascade = cv2.CascadeClassifier(cv_data_path + "haarcascade_frontalface_default.xml")
-        self.eye_cascade = cv2.CascadeClassifier(cv_data_path + "haarcascade_eye.xml")
+        if cv2 is not None:
+            try:
+                # Load OpenCV Haar cascade classifiers
+                cv_data_path = cv2.data.haarcascades
+                self.face_cascade = cv2.CascadeClassifier(cv_data_path + "haarcascade_frontalface_default.xml")
+                self.eye_cascade = cv2.CascadeClassifier(cv_data_path + "haarcascade_eye.xml")
+            except Exception:
+                pass
 
     def extract_features_from_video(self, video_path: str) -> Dict[str, Any]:
         """
         Main extraction entrypoint for raw video file.
         Returns structured dictionary with feature vector, warnings, and modality status.
         """
+        if cv2 is None:
+            return self._fallback_result(
+                "OpenCV (cv2) is not installed",
+                warnings=["Raw video frame extraction requires opencv-python or opencv-python-headless."]
+            )
+
         v_path = Path(video_path)
         warnings = []
 
@@ -164,35 +179,39 @@ class VideoFeatureExtractor:
             warnings.append("Low ambient lighting detected in over 40% of frames (CLAHE applied)")
         if multiple_face_warnings > sampled_count * 0.2:
             warnings.append("Multiple faces detected in scene; dominant learner tracked")
+
         if faces_detected == 0:
-            warnings.append("No face detected in video stream; fallback cues engaged")
+            warnings.append("No learner face detected in decoded video frames; facial gaze, head pose, blink rate, and expression cannot be reliably measured.")
+            return self._fallback_result("No face detected in video stream", warnings=warnings)
 
         # -------------------------------------------------------------
         # Feature Calculations (Mapped strictly to training CSV schema)
         # -------------------------------------------------------------
-        # 1. Face_Visibility (fraction of frames with face >= 0.30 -> binary 1, else 0)
+        # 1. Face_Visibility (fraction of frames with face >= 0.35 -> binary 1, else 0)
         face_ratio = faces_detected / sampled_count
-        face_visibility = 1 if face_ratio >= 0.35 else 0
+        face_visibility = 1.0 if face_ratio >= 0.35 else 0.0
 
         # 2. Eye_Gaze_Score [0, 1]
-        if eyes_detected_list:
-            avg_eyes = np.mean(eyes_detected_list)
+        eyes_positive = [e for e in eyes_detected_list if e > 0]
+        if eyes_positive:
+            avg_eyes = float(np.mean(eyes_detected_list))
             eye_gaze_score = float(np.clip(avg_eyes / 2.0, 0.05, 0.98))
         else:
-            eye_gaze_score = 0.50
+            eye_gaze_score = 0.0
+            warnings.append("Eye regions were not resolved in detected face ROI; gaze tracking unavailable.")
 
         # 3. Head_Pose_Stability [0, 1] (Inverse of centroid jitter)
         if len(face_centers) > 2:
             centers = np.array(face_centers)
-            var_x = np.var(centers[:, 0])
-            var_y = np.var(centers[:, 1])
-            jitter = np.sqrt(var_x + var_y)
+            var_x = float(np.var(centers[:, 0]))
+            var_y = float(np.var(centers[:, 1]))
+            jitter = float(np.sqrt(var_x + var_y))
             stability = float(np.clip(1.0 - (jitter * 4.0), 0.05, 0.98))
         else:
-            stability = 0.45 if faces_detected > 0 else 0.10
+            stability = 0.50
+            warnings.append("Insufficient facial tracking frames to calculate head pose jitter variance.")
 
-        # 4. Blink_Rate (blinks per minute, dataset range ~ 5 to 30)
-        # Approximate blink count by transitions where eye count drops and recovers
+        # 4. Blink_Rate (blinks per minute, physiological range ~ 6 to 28)
         blinks = 0
         in_blink = False
         for e_cnt in eyes_detected_list:
@@ -202,33 +221,41 @@ class VideoFeatureExtractor:
             elif e_cnt > 0:
                 in_blink = False
 
-        effective_duration_min = max(duration_sec / 60.0, 0.1)
-        est_blink_rate = float(np.clip(blinks / effective_duration_min, 6.0, 28.0))
+        effective_duration_min = max(duration_sec / 60.0, 0.05)
+        if eyes_positive and blinks > 0:
+            est_blink_rate = float(np.clip(blinks / effective_duration_min, 6.0, 28.0))
+        elif eyes_positive:
+            est_blink_rate = 10.0  # Steady open eyes without observed blinks in short window
+            warnings.append("No blink transitions observed during short sampling window.")
+        else:
+            est_blink_rate = 0.0
+            warnings.append("Blink transitions could not be measured because eye tracking was unavailable.")
 
         # 5. Facial_Expression_Intensity [0, 1]
-        expression_intensity = float(np.clip(np.std(motion_diffs) / 15.0 if motion_diffs else 0.30, 0.05, 0.95))
+        expression_intensity = float(np.clip(np.std(motion_diffs) / 15.0 if motion_diffs else 0.10, 0.05, 0.95))
+        warnings.append("Note: Facial expression intensity is approximated from ROI pixel variance, not 3D FACS action units.")
 
-        # 6. Body_Posture_Score [0, 1] (Centrality and uprightness)
+        # 6. Body_Posture_Score [0, 1] (Centrality and uprightness of head)
         if face_centers:
-            mean_cx = np.mean([c[0] for c in face_centers])
-            mean_cy = np.mean([c[1] for c in face_centers])
-            dist_from_ideal = np.sqrt((mean_cx - 0.5)**2 + (mean_cy - 0.45)**2)
+            mean_cx = float(np.mean([c[0] for c in face_centers]))
+            mean_cy = float(np.mean([c[1] for c in face_centers]))
+            dist_from_ideal = float(np.sqrt((mean_cx - 0.5)**2 + (mean_cy - 0.45)**2))
             posture_score = float(np.clip(1.0 - (dist_from_ideal * 2.0), 0.10, 0.95))
         else:
-            posture_score = 0.25
+            posture_score = 0.0
 
         # 7. Movement_Level [0, 1]
         if motion_diffs:
             movement_level = float(np.clip(np.mean(motion_diffs) / 25.0, 0.05, 0.98))
         else:
-            movement_level = 0.30
+            movement_level = 0.10
 
         # 8. Focus_Duration (seconds in uninterrupted focus, dataset range 0 to 300)
         sample_interval_sec = duration_sec / max(sampled_count, 1)
         focus_duration = float(np.clip(max_focus_run * sample_interval_sec, 0.0, 300.0))
 
         # 9. Screen_Orientation (1: standard landscape orientation width >= height, 0: portrait/tilted)
-        screen_orientation = 1 if width >= height else 0
+        screen_orientation = 1.0 if width >= height else 0.0
 
         # 10. Attention_Score [0, 1] (Composite visual metric)
         raw_att = (0.35 * eye_gaze_score) + (0.35 * stability) + (0.30 * face_ratio)
@@ -251,7 +278,7 @@ class VideoFeatureExtractor:
 
         return {
             "status": "Success",
-            "video_available": faces_detected > 0,
+            "video_available": True,
             "features": feature_dict,
             "feature_vector": feature_vector,
             "warnings": warnings,
@@ -261,25 +288,13 @@ class VideoFeatureExtractor:
         }
 
     def _fallback_result(self, status: str, warnings: List[str]) -> Dict[str, Any]:
-        """Provides safe neutral fallback vector when video cannot be processed."""
-        # Mean defaults from training data
-        fallback_dict = {
-            "Face_Visibility": 0.0,
-            "Eye_Gaze_Score": 0.50,
-            "Head_Pose_Stability": 0.49,
-            "Blink_Rate": 17.40,
-            "Facial_Expression_Intensity": 0.48,
-            "Body_Posture_Score": 0.50,
-            "Movement_Level": 0.50,
-            "Focus_Duration": 150.0,
-            "Screen_Orientation": 1.0,
-            "Attention_Score": 0.50
-        }
+        """Provides zeroed feature vector when video cannot be processed, without fabricating measurements."""
+        fallback_dict = {k: 0.0 for k in VIDEO_FEATURE_NAMES}
         return {
             "status": status,
             "video_available": False,
             "features": fallback_dict,
-            "feature_vector": np.array([fallback_dict[k] for k in VIDEO_FEATURE_NAMES], dtype=np.float32),
+            "feature_vector": np.zeros(len(VIDEO_FEATURE_NAMES), dtype=np.float32),
             "warnings": warnings,
             "duration_sec": 0.0,
             "sampled_frames": 0,

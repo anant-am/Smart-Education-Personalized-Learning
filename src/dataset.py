@@ -70,17 +70,31 @@ class KTSequenceDataset(Dataset):
 
             # Tags (pad with 0 to 3 concepts)
             tags = event.get('tags', [])
+            if isinstance(tags, str):
+                tags = [int(t.strip()) for t in tags.replace(';', ',').split(',') if t.strip().isdigit()]
+            elif isinstance(tags, (int, float)):
+                tags = [int(tags)]
+            elif not isinstance(tags, (list, tuple)):
+                tags = []
+
             tag1 = int(tags[0]) if len(tags) > 0 else 0
             tag2 = int(tags[1]) if len(tags) > 1 else 0
             tag3 = int(tags[2]) if len(tags) > 2 else 0
 
+            raw_qid = event.get('question_id', 0)
+            if isinstance(raw_qid, str):
+                cleaned_qid = ''.join(c for c in raw_qid if c.isdigit())
+                qid_val = float(cleaned_qid) if cleaned_qid else 0.0
+            else:
+                qid_val = float(raw_qid)
+
             features[i] = [
-                float(event.get('question_id', 0)),
+                qid_val,
                 float(event.get('part', 0)),
                 float(tag1),
                 float(tag2),
                 float(tag3),
-                float(event.get('is_correct', 0)),
+                float(event.get('is_correct', event.get('answered_correctly', 0))),
                 float(event.get('response_time', 0.0)),
                 float(event.get('source_encoded', 0)),
                 float(event.get('platform_encoded', 0))

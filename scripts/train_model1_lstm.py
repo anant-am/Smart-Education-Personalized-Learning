@@ -10,7 +10,7 @@ Executes the verified academic lifecycle for Model 1 (LSTM + Attention):
 5. Quantitative Overfitting/Underfitting Diagnosis with empirical evidence.
 6. Correction Technique Application.
 7. Retraining Invariant (fresh ModelTrainer & new optimizer).
-8. Final Untouched Test Evaluation on 250 unseen students.
+8. Final Untouched Test Evaluation on unseen students.
 9. Dual Knowledge State Estimation (Model-Derived vs. Historical Baseline), Gap Detection, and Recommendation.
 """
 

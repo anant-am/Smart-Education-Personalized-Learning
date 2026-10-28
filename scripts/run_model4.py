@@ -10,7 +10,7 @@ Executes the full university-mandated academic lifecycle for Model 4:
 6. Quantitative Overfitting/Underfitting Diagnosis with empirical evidence.
 7. Correction Technique Application (Regularization Tuning).
 8. Independent Retraining with fresh ModelTrainer and fresh optimizer.
-9. Final Untouched Test Evaluation on 250 unseen students with academic ranking metrics:
+9. Final Untouched Test Evaluation on unseen students with academic ranking metrics:
    Precision@K, Recall@K, NDCG@K, HitRate@K for K in {5, 10}.
 10. Generates reports/model4_report.md and reports/model4_results.json.
 """

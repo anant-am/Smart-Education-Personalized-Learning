@@ -193,7 +193,7 @@ def render(engine: Any) -> None:
             )
             col_m5_a, col_m5_b, col_m5_c = st.columns(3)
             col_m5_a.info("**Architecture Components**  \n- 1D Temporal Convolutions (kernel=3, filters=64)  \n- Batch Normalization & Max Pooling  \n- Recurrent LSTM Sequence Aggregator  \n- Dense Calibrated Classifier")
-            col_m5_b.success("**Performance Benchmarks**  \n- Test Accuracy: **98.84%**  \n- Test ROC-AUC: **0.9996**  \n- Precision: 98.71% | Recall: 99.54%  \n- Parameters: **803,201**")
+            col_m5_b.success("**Performance Benchmarks**  \n- Test Accuracy: **62.28%** (Causal)  \n- Test ROC-AUC: **0.5284**  \n- Precision: 66.01% | Recall: 88.72%  \n- Parameters: **153,601**  \n*(Audit Note: Legacy 98.84% was unmasked pre-causal baseline; verified causal accuracy is 62.28%)*")
             col_m5_c.info("**Operational Role**  \n- Rapid error-burst detection  \n- Peak trajectory discrimination  \n- Ensemble confidence calibration")
 
         st.markdown("---")

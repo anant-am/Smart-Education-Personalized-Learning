@@ -109,6 +109,7 @@ st.markdown("""
 # ── Page Registry ──
 PAGES = {
     "Dashboard":              "🏠",
+    "Model & Experiment Comparison": "⚖️",
     "Student Analysis":       "🎯",
     "Knowledge State":        "🧠",
     "Recommendations":        "📚",
@@ -147,9 +148,12 @@ with st.sidebar:
             from ollama_ai.ollama_config import OLLAMA_MODEL
             ai_cli = OllamaClient()
             if ai_cli.is_available():
-                st.caption(f"🤖 Ollama Active (`{OLLAMA_MODEL}`)")
+                if ai_cli.is_model_available():
+                    st.caption(f"🤖 Ollama Active (`{OLLAMA_MODEL}`)")
+                else:
+                    st.caption("🤖 Ollama Daemon Online (Fallback Active)")
             else:
-                st.caption("🤖 Ollama ")
+                st.caption("🤖 Ollama Offline (Fallback Active)")
         except Exception:
             pass
     except Exception as e:
@@ -162,6 +166,7 @@ with st.sidebar:
 # ── Page Router ──
 page_modules = {
     "Dashboard":              "gui.page_dashboard",
+    "Model & Experiment Comparison": "gui.page_comparison",
     "Student Analysis":       "gui.page_student",
     "Knowledge State":        "gui.page_knowledge",
     "Recommendations":        "gui.page_recommendations",
